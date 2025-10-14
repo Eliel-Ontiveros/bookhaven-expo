@@ -17,34 +17,128 @@ import {
 } from './types';
 
 class APIService {
+  private workingBaseUrl: string | null = null;
+
   private async getAuthHeader(): Promise<Record<string, string>> {
     const token = await AsyncStorage.getItem('authToken');
-    return token 
+    return token
       ? { ...API_CONFIG.HEADERS, Authorization: `Bearer ${token}` }
       : API_CONFIG.HEADERS;
   }
 
+  /**
+   * Auto-detecta la mejor URL disponible para la API
+   */
+  private async findWorkingUrl(): Promise<string> {
+    if (this.workingBaseUrl) {
+      return this.workingBaseUrl;
+    }
+
+    const urlsToTest = [
+      API_CONFIG.BASE_URL, // URL principal del .env
+      ...this.getFallbackUrls()
+    ];
+
+    console.log('🔍 Auto-detectando mejor URL para API...');
+
+    for (const baseUrl of urlsToTest) {
+      try {
+        console.log(`🔄 Probando: ${baseUrl}`);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout corto para las pruebas
+
+        const response = await fetch(`${baseUrl}/api`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          console.log(`✅ URL funcional encontrada: ${baseUrl}`);
+          this.workingBaseUrl = baseUrl;
+          return baseUrl;
+        }
+      } catch (error) {
+        console.log(`❌ Falló: ${baseUrl} - ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      }
+    }
+
+    // Si ninguna URL funciona, usar la principal
+    console.log('⚠️ No se encontró URL funcional, usando la configurada');
+    return API_CONFIG.BASE_URL;
+  }
+
+  private getFallbackUrls(): string[] {
+    const fallbackUrls = process.env.EXPO_PUBLIC_API_FALLBACK_URLS;
+    if (fallbackUrls) {
+      return fallbackUrls.split(',').map(url => url.trim());
+    }
+    return [
+      'http://localhost:3000',
+      'http://10.0.2.2:3000', // Emulador Android
+      'http://192.168.1.69:3000', // IP de red local (ejemplo)
+    ];
+  }
+
   private async request<T>(
-    endpoint: string, 
+    endpoint: string,
     options: RequestInit = {}
   ): Promise<APIResponse<T>> {
+    // Auto-detectar la mejor URL disponible
+    const baseUrl = await this.findWorkingUrl();
+    const url = `${baseUrl}${endpoint}`;
+
+    if (API_CONFIG.DEBUG) {
+      console.log('🔄 API Request:', url);
+      console.log('📋 Request Options:', {
+        method: options.method || 'GET',
+        headers: options.headers,
+        body: options.body ? 'Present' : 'None'
+      });
+    }
+
     try {
-      console.log('🔄 API Request:', `${API_CONFIG.BASE_URL}${endpoint}`);
-      
-      const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+
+      const response = await fetch(url, {
         ...options,
+        signal: controller.signal,
         headers: {
           ...API_CONFIG.HEADERS,
           ...options.headers,
         },
       });
 
-      console.log('📊 Response Status:', response.status);
-      
-      const data = await response.json();
-      console.log('📦 Response Data:', data);
+      clearTimeout(timeoutId);
 
-      // Verificar si la respuesta es exitosa (status 200-299)
+      if (API_CONFIG.DEBUG) {
+        console.log('📊 Response Status:', response.status);
+        console.log('📊 Response Headers:', Object.fromEntries(response.headers.entries()));
+      }
+
+      const data = await response.json();
+
+
+      if (API_CONFIG.DEBUG) {
+        // Mostrar datos específicos según el endpoint
+        if (endpoint.includes('/books/search') && data?.data?.data) {
+          console.log('📦 Books Search Response:', {
+            totalBooks: data.data.data.length,
+            firstBook: data.data.data[0] ? {
+              id: data.data.data[0].id,
+              title: data.data.data[0].title,
+              authors: data.data.data[0].authors
+            } : 'No books found',
+            pagination: data.data.pagination
+          });
+        } else {
+          console.log('📦 Response Data:', data);
+        }
+      }      // Verificar si la respuesta es exitosa (status 200-299)
       if (response.ok) {
         // El backend ya devuelve la estructura APIResponse, no la envolvemos otra vez
         if (data.success !== undefined) {
@@ -59,14 +153,27 @@ class APIService {
       } else {
         return {
           success: false,
-          error: data.message || data.error || 'Error en la respuesta del servidor',
+          error: data.message || data.error || `Error ${response.status}: ${response.statusText}`,
         };
       }
     } catch (error) {
       console.error('❌ API Request failed:', error);
+
+      let errorMessage = 'Error de conexión';
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Timeout: La petición tardó demasiado en responder';
+        } else if (error.message.includes('Network request failed')) {
+          errorMessage = 'Error de red: No se puede conectar al servidor. Verifica que el backend esté ejecutándose.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Error de conexión',
+        error: errorMessage,
       };
     }
   }
@@ -129,7 +236,7 @@ class APIService {
   // Books methods
   async searchBooks(params: BookSearchParams = {}): Promise<APIResponse<Book[]>> {
     const queryParams = new URLSearchParams();
-    
+
     if (params.query) queryParams.append('query', params.query);
     if (params.page) queryParams.append('page', params.page.toString());
     if (params.limit) queryParams.append('limit', params.limit.toString());
@@ -235,6 +342,55 @@ class APIService {
     return this.request<Book[]>(API_CONFIG.ENDPOINTS.USER_RECOMMENDATIONS, {
       headers,
     });
+  }
+
+  // Advanced search methods
+  async searchBooksByGenre(genre: string, page: number = 1, limit: number = 20): Promise<APIResponse<Book[]>> {
+    const params = new URLSearchParams({
+      query: `subject:${genre}`,
+      page: page.toString(),
+      limit: limit.toString()
+    });
+
+    return this.request<Book[]>(`${API_CONFIG.ENDPOINTS.BOOKS_SEARCH}?${params.toString()}`);
+  }
+
+  async searchBooksByAuthor(author: string, page: number = 1, limit: number = 20): Promise<APIResponse<Book[]>> {
+    const params = new URLSearchParams({
+      query: `inauthor:${author}`,
+      page: page.toString(),
+      limit: limit.toString()
+    });
+
+    return this.request<Book[]>(`${API_CONFIG.ENDPOINTS.BOOKS_SEARCH}?${params.toString()}`);
+  }
+
+  async searchBooksAdvanced(params: {
+    genre?: string;
+    author?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<APIResponse<Book[]>> {
+    const { genre, author, page = 1, limit = 20 } = params;
+
+    let query = '';
+    if (genre && author) {
+      query = `subject:${genre} inauthor:${author}`;
+    } else if (genre) {
+      query = `subject:${genre}`;
+    } else if (author) {
+      query = `inauthor:${author}`;
+    } else {
+      query = 'fiction'; // Default fallback
+    }
+
+    const searchParams = new URLSearchParams({
+      query,
+      page: page.toString(),
+      limit: limit.toString()
+    });
+
+    return this.request<Book[]>(`${API_CONFIG.ENDPOINTS.BOOKS_SEARCH}?${searchParams.toString()}`);
   }
 }
 

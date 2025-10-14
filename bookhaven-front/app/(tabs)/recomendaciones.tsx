@@ -1,289 +1,254 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
 } from 'react-native';
 import { apiService } from '@/lib/api/service';
 import { Book } from '@/lib/api/types';
 import FilterButtons from '@/components/FilterButtons';
-import GenreSelector from '@/components/GenreSelector';
+import GenreDropdown from '@/components/GenreDropdown';
+import AuthorSearch from '@/components/AuthorSearch';
 import BooksList from '@/components/BooksList';
 
 export default function RecommendationsScreen() {
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [filterBy, setFilterBy] = useState<'author' | 'genre'>('author');
-  const [recommendations, setRecommendations] = useState<Book[]>([]);
+  const [selectedGenre, setSelectedGenre] = useState<string>('');
+  const [authorQuery, setAuthorQuery] = useState<string>('');
+  const [filterBy, setFilterBy] = useState<'author' | 'genre'>('genre');
+  const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const debounceTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    loadRecommendations();
+    loadInitialBooks();
   }, []);
 
-  const loadRecommendations = async () => {
+  useEffect(() => {
+    handleSearch();
+  }, [selectedGenre, authorQuery]);
+
+  // Función para cargar libros iniciales (recomendaciones del usuario)
+  const loadInitialBooks = async () => {
     setLoading(true);
     try {
-      console.log('🌟 Loading recommendations...');
+      console.log('🌟 Loading user recommendations...');
       const response = await apiService.getUserRecommendations();
-      console.log('🌟 Recommendations response:', response);
-      
-      if (response.success && response.data) {
-        // Asegurar que data sea un array
-        const recommendationsData = Array.isArray(response.data) ? response.data : [];
-        console.log('📚 Recommendations loaded:', recommendationsData.length);
-        
-        // Mapear los datos de la API al formato que espera el frontend
-        const formattedRecommendations = recommendationsData.map((book: any) => ({
-          id: book.id || book.googleBooksId || String(Math.random()),
-          title: book.title || 'Título no disponible',
-          authors: Array.isArray(book.authors) ? book.authors.join(', ') : (book.authors || 'Autor desconocido'),
-          description: book.description || 'Descripción no disponible',
-          categories: Array.isArray(book.categories) ? book.categories : (book.categories ? [book.categories] : ['General']),
-          averageRating: book.averageRating || 0,
-          image: book.image || book.coverUrl || undefined,
-        }));
-        
-        setRecommendations(formattedRecommendations);
-        console.log('✅ Formatted recommendations:', formattedRecommendations.length);
+
+      if (response.success && response.data && Array.isArray(response.data) && response.data.length > 0) {
+        setBooks(response.data);
+        setHasMore(false); // Las recomendaciones del usuario son limitadas
       } else {
-        console.log('❌ Failed to load recommendations:', response.error);
-        // Si no hay recomendaciones de la API, buscar libros populares
-        await loadPopularBooks();
+        // Si no hay recomendaciones personalizadas, cargar libros de ficción por defecto
+        await searchBooks('fiction', 1, true);
       }
     } catch (error) {
       console.error('❌ Error loading recommendations:', error);
-      // En caso de error, intentar cargar libros populares
-      await loadPopularBooks();
+      await searchBooks('fiction', 1, true);
     }
     setLoading(false);
   };
 
-  // Función para cargar libros populares como fallback
-  const loadPopularBooks = async () => {
+  // Función para buscar libros con paginación
+  const searchBooks = async (
+    query: string,
+    page: number = 1,
+    reset: boolean = false
+  ) => {
+    if (reset) {
+      setLoading(true);
+      setBooks([]);
+      setCurrentPage(1);
+      setHasMore(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      console.log('📚 Loading popular books as fallback...');
-      
-      // Intentar con diferentes queries populares más simples
-      const popularQueries = [
-        'fiction',
-        'novel',
-        'bestseller',
-        'popular',
-        'classic',
-        'literature'
-      ];
-      
-      for (const query of popularQueries) {
-        console.log(`🔍 Trying query: ${query}`);
-        const searchResponse = await apiService.searchBooks({ query });
-        
-        if (searchResponse.success && searchResponse.data && Array.isArray(searchResponse.data) && searchResponse.data.length > 0) {
-          const popularBooks = searchResponse.data.slice(0, 6).map((book: any, index: number) => ({
-            id: book.id || String(index),
-            title: book.title || 'Título no disponible',
-            authors: Array.isArray(book.authors) ? book.authors.join(', ') : (book.authors || 'Autor desconocido'),
-            description: book.description || 'Descripción no disponible',
-            categories: Array.isArray(book.categories) ? book.categories : ['General'],
-            averageRating: book.averageRating || 4.0,
-            image: book.image || book.coverUrl,
-          }));
-          
-          setRecommendations(popularBooks);
-          console.log('✅ Popular books loaded:', popularBooks.length);
-          return; // Exit the loop once we find books
-        }
+      let response;
+
+      if (filterBy === 'genre' && selectedGenre) {
+        response = await apiService.searchBooksByGenre(selectedGenre, page, 20);
+      } else if (filterBy === 'author' && authorQuery.trim()) {
+        response = await apiService.searchBooksByAuthor(authorQuery.trim(), page, 20);
+      } else {
+        // Búsqueda por defecto
+        response = await apiService.searchBooks({ query, page, limit: 20 });
       }
-      
-      // Si ninguna query funcionó, mostrar mensaje vacío
-      console.log('❌ No books found with any query');
-      setRecommendations([]);
-    } catch (error) {
-      console.error('❌ Error loading popular books:', error);
-      setRecommendations([]);
-    }
-  };
 
-  const genres = [
-    'Ficcion', 'Romance', 'Fantasia', 'Historia', 'Biografia', 'Poesia', 'Comic', 'Novela',
-    'Viajes', 'Cocina', 'Salud', 'Negocios', 'Tecnologia', 'Arte', 'Politica', 'Religion'
-  ];
-
-  const handleGenreToggle = (genre: string) => {
-    let newSelectedGenres;
-    if (selectedGenres.includes(genre)) {
-      newSelectedGenres = selectedGenres.filter(g => g !== genre);
-    } else {
-      newSelectedGenres = [...selectedGenres, genre];
-    }
-    setSelectedGenres(newSelectedGenres);
-    
-    // Buscar libros por género cuando se selecciona/deselecciona
-    if (newSelectedGenres.length > 0) {
-      searchBooksByGenres(newSelectedGenres);
-    } else {
-      loadRecommendations(); // Volver a las recomendaciones originales
-    }
-  };
-
-  const searchBooksByGenres = async (genres: string[]) => {
-    setLoading(true);
-    try {
-      console.log('🔍 Searching books by genres:', genres);
-      
-      // Mejorar query de búsqueda para Google Books API
-      // Usar términos más generales que Google Books reconoce mejor
-      const genreMapping: { [key: string]: string } = {
-        'Misterio': 'mystery OR detective OR crime',
-        'Romance': 'romance OR love',
-        'Fantasia': 'fantasy OR magic',
-        'Historia': 'history OR historical',
-        'Biografia': 'biography OR memoir',
-        'Ficcion': 'fiction OR novel',
-        'Poesia': 'poetry',
-        'Comic': 'comics OR graphic',
-        'Novela': 'novel OR fiction',
-        'Viajes': 'travel',
-        'Cocina': 'cooking OR cookbook',
-        'Salud': 'health OR wellness',
-        'Negocios': 'business',
-        'Tecnologia': 'technology OR tech',
-        'Arte': 'art',
-        'Politica': 'politics',
-        'Religion': 'religion'
-      };
-      
-      const searchTerms = genres.map(genre => 
-        genreMapping[genre] || genre.toLowerCase()
-      ).join(' OR ');
-      
-      console.log('🔍 Search terms:', searchTerms);
-      const searchResponse = await apiService.searchBooks({ query: searchTerms });
-      
-      if (searchResponse.success && searchResponse.data && Array.isArray(searchResponse.data)) {
-        const genreBooks = searchResponse.data.slice(0, 10).map((book: any, index: number) => ({
-          id: book.id || String(index),
+      if (response.success && response.data && Array.isArray(response.data)) {
+        const newBooks = response.data.map((book: any) => ({
+          id: book.id || String(Math.random()),
           title: book.title || 'Título no disponible',
           authors: Array.isArray(book.authors) ? book.authors.join(', ') : (book.authors || 'Autor desconocido'),
           description: book.description || 'Descripción no disponible',
-          categories: Array.isArray(book.categories) ? book.categories : [genres[0]],
-          averageRating: book.averageRating || 4.0,
-          image: book.image || book.coverUrl,
+          categories: Array.isArray(book.categories) ? book.categories : ['General'],
+          averageRating: book.averageRating || 0,
+          image: book.image || book.coverUrl || undefined,
         }));
-        
-        setRecommendations(genreBooks);
-        console.log('✅ Genre books loaded:', genreBooks.length);
+
+        if (reset) {
+          setBooks(newBooks);
+        } else {
+          setBooks(prevBooks => [...prevBooks, ...newBooks]);
+        }
+
+        setCurrentPage(page);
+        setHasMore(newBooks.length === 20); // Si trae menos de 20, no hay más
+
+        console.log(`✅ Books loaded: ${newBooks.length} (page ${page})`);
       } else {
-        console.log('❌ No books found for selected genres');
+        setHasMore(false);
       }
     } catch (error) {
-      console.error('❌ Error searching books by genres:', error);
+      console.error('❌ Error searching books:', error);
+      setHasMore(false);
     }
+
     setLoading(false);
+    setLoadingMore(false);
   };
 
-  const searchByPopularAuthors = async () => {
-    setLoading(true);
-    try {
-      console.log('👤 Searching books by popular authors...');
-      
-      // Probar con diferentes autores populares individualmente
-      const popularAuthors = ['Stephen King', 'Agatha Christie', 'J.K. Rowling', 'Dan Brown', 'Gabriel García Márquez'];
-      
-      for (const author of popularAuthors) {
-        console.log(`🔍 Searching for author: ${author}`);
-        const searchResponse = await apiService.searchBooks({ query: author });
-        
-        if (searchResponse.success && searchResponse.data && Array.isArray(searchResponse.data) && searchResponse.data.length > 0) {
-          const authorBooks = searchResponse.data.slice(0, 8).map((book: any, index: number) => ({
-            id: book.id || String(index),
-            title: book.title || 'Título no disponible',
-            authors: Array.isArray(book.authors) ? book.authors.join(', ') : (book.authors || 'Autor desconocido'),
-            description: book.description || 'Descripción no disponible',
-            categories: Array.isArray(book.categories) ? book.categories : ['General'],
-            averageRating: book.averageRating || 4.0,
-            image: book.image || book.coverUrl,
-          }));
-          
-          setRecommendations(authorBooks);
-          console.log('✅ Author books loaded:', authorBooks.length);
-          return; // Exit once we find books
-        }
-      }
-      
-      // Si no se encontraron libros con ningún autor, usar fallback
-      console.log('❌ No books found for popular authors, using fallback');
-      await loadPopularBooks();
-    } catch (error) {
-      console.error('❌ Error searching books by authors:', error);
-      loadRecommendations(); // Fallback a recomendaciones originales
+  // Función debounced para búsqueda
+  const debouncedSearch = useCallback((query: string) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
-    setLoading(false);
+
+    debounceTimerRef.current = setTimeout(() => {
+      if (query.trim() || selectedGenre) {
+        searchBooks(query.trim() || selectedGenre, 1, true);
+      }
+    }, 500);
+  }, [selectedGenre]);
+
+  // Manejar cambios en los filtros
+  const handleSearch = () => {
+    if (filterBy === 'author' && authorQuery.trim()) {
+      debouncedSearch(authorQuery);
+    } else if (filterBy === 'genre' && selectedGenre) {
+      searchBooks(selectedGenre, 1, true);
+    } else if (!selectedGenre && !authorQuery.trim()) {
+      // Si no hay filtros activos, mostrar recomendaciones generales
+      searchBooks('fiction', 1, true);
+    }
+  };
+
+  // Manejar cambios en los filtros
+  const handleFilterChange = (filter: 'author' | 'genre') => {
+    setFilterBy(filter);
+    setSelectedGenre('');
+    setAuthorQuery('');
+    setCurrentPage(1);
+
+    if (filter === 'genre') {
+      // Mostrar recomendaciones generales al cambiar a filtro por género
+      searchBooks('fiction', 1, true);
+    } else {
+      // Limpiar resultados al cambiar a filtro por autor
+      setBooks([]);
+    }
+  };
+
+  const handleGenreChange = (genre: string) => {
+    setSelectedGenre(genre);
+  };
+
+  const handleAuthorChange = (author: string) => {
+    setAuthorQuery(author);
+  };
+
+  const handleBookPress = (book: Book) => {
+    console.log('Book selected:', book);
+    // Aquí podrías navegar a la pantalla de detalles del libro
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      const nextPage = currentPage + 1;
+
+      if (filterBy === 'genre' && selectedGenre) {
+        searchBooks(selectedGenre, nextPage, false);
+      } else if (filterBy === 'author' && authorQuery.trim()) {
+        searchBooks(authorQuery.trim(), nextPage, false);
+      }
+    }
   };
 
   const handleNavigation = (section: string) => {
     console.log('Navigate to:', section);
   };
 
-  const handleBookPress = (book: Book) => {
-    console.log('Book selected:', book);
-  };
-
-  const handleFilterChange = (filter: 'author' | 'genre') => {
-    if (filter === 'author') {
-      setFilterBy('author');
-      setSelectedGenres([]);
-      searchByPopularAuthors();
-    } else {
-      setFilterBy('genre');
-      setSelectedGenres([]);
-    }
-  };
-
-  const filteredBooks = (recommendations || []).filter(book => 
-    selectedGenres.length === 0 || (book.categories && book.categories.some(category => selectedGenres.includes(category)))
-  );
-
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
         {/* Title */}
         <Text style={styles.title}>Recomendaciones</Text>
 
         {/* Filter Buttons */}
-        <FilterButtons 
-          filterBy={filterBy}
-          onFilterChange={handleFilterChange}
-        />
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              filterBy === 'genre' && styles.filterButtonActive
+            ]}
+            onPress={() => handleFilterChange('genre')}
+          >
+            <Text style={[
+              styles.filterButtonText,
+              filterBy === 'genre' && styles.filterButtonTextActive
+            ]}>
+              Por Género
+            </Text>
+          </TouchableOpacity>
 
-        {/* Genre Selection */}
-        <GenreSelector
-          genres={genres}
-          selectedGenres={selectedGenres}
-          onGenreToggle={handleGenreToggle}
-          visible={filterBy === 'genre'}
-        />
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              filterBy === 'author' && styles.filterButtonActive
+            ]}
+            onPress={() => handleFilterChange('author')}
+          >
+            <Text style={[
+              styles.filterButtonText,
+              filterBy === 'author' && styles.filterButtonTextActive
+            ]}>
+              Por Autor
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Selected Genre Title */}
-        {selectedGenres.length > 0 && (
-          <Text style={styles.selectedGenreTitle}>
-            {selectedGenres.join(', ')}
-          </Text>
+        {/* Filtros */}
+        {filterBy === 'genre' && (
+          <GenreDropdown
+            selectedGenre={selectedGenre}
+            onGenreChange={handleGenreChange}
+            visible={true}
+          />
         )}
 
-        {/* Books List */}
+        {filterBy === 'author' && (
+          <AuthorSearch
+            authorQuery={authorQuery}
+            onAuthorChange={handleAuthorChange}
+            visible={true}
+          />
+        )}
+
+        {/* Lista de Libros con Infinite Scroll */}
         <BooksList
-          books={filteredBooks}
+          books={books}
           loading={loading}
           onBookPress={handleBookPress}
+          onEndReached={handleLoadMore}
+          horizontal={false}
         />
-
-        {/* Scroll Indicator */}
-        <View style={styles.scrollIndicator}>
-          <Text style={styles.scrollText}>⬇</Text>
-        </View>
-      </ScrollView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -293,6 +258,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5DC', // Light beige background
   },
   content: {
+    flex: 1,
     padding: 20,
   },
   title: {
@@ -301,6 +267,31 @@ const styles = StyleSheet.create({
     color: '#CD5C5C', // Coral red
     textAlign: 'center',
     marginBottom: 20,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    padding: 4,
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: '#CD5C5C',
+  },
+  filterButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666666',
+  },
+  filterButtonTextActive: {
+    color: '#FFFFFF',
   },
   selectedGenreTitle: {
     fontSize: 18,

@@ -11,12 +11,14 @@ import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/lib/api/service';
 import { BookList } from '@/lib/api/types';
+import CreateListModal from '@/components/CreateListModal';
 
 export default function ProfileScreen() {
   const [selectedList, setSelectedList] = useState('');
   const { user, logout } = useAuth();
   const [bookLists, setBookLists] = useState<BookList[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     loadBookLists();
@@ -27,7 +29,7 @@ export default function ProfileScreen() {
       console.log('📚 Loading book lists...');
       const listsResponse = await apiService.getBookLists();
       console.log('📚 Book lists response:', listsResponse);
-      
+
       if (listsResponse.success && listsResponse.data) {
         const bookListsData = Array.isArray(listsResponse.data) ? listsResponse.data : [];
         setBookLists(bookListsData);
@@ -80,15 +82,15 @@ export default function ProfileScreen() {
               {user?.username || 'Usuario'}
             </Text>
             <Text style={styles.profileAge}>
-              {user?.birthdate ? 
-                `Edad: ${new Date().getFullYear() - new Date(user.birthdate).getFullYear()} años` : 
+              {user?.birthdate ?
+                `Edad: ${new Date().getFullYear() - new Date(user.birthdate).getFullYear()} años` :
                 'Edad: No disponible'
               }
             </Text>
           </View>
 
           {/* Logout Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.logoutButton}
             onPress={() => {
               Alert.alert(
@@ -96,8 +98,8 @@ export default function ProfileScreen() {
                 '¿Estás seguro de que quieres cerrar sesión?',
                 [
                   { text: 'Cancelar', style: 'cancel' },
-                  { 
-                    text: 'Cerrar sesión', 
+                  {
+                    text: 'Cerrar sesión',
                     style: 'destructive',
                     onPress: logout
                   }
@@ -110,8 +112,16 @@ export default function ProfileScreen() {
 
           {/* Reading Lists Section */}
           <View style={styles.listsSection}>
-            <Text style={styles.listsTitle}>Mis listas de lectura</Text>
-            
+            <View style={styles.listsTitleContainer}>
+              <Text style={styles.listsTitle}>Mis listas de lectura</Text>
+              <TouchableOpacity
+                style={styles.createListButton}
+                onPress={() => setShowCreateModal(true)}
+              >
+                <Text style={styles.createListButtonText}>+ Nueva Lista</Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.pickerContainer}>
               {bookLists.length > 0 ? (
                 <Picker
@@ -120,15 +130,15 @@ export default function ProfileScreen() {
                   onValueChange={(itemValue) => setSelectedList(itemValue)}
                   dropdownIconColor="#8B4513"
                 >
-                  <Picker.Item 
-                    label="Selecciona una lista" 
-                    value="" 
+                  <Picker.Item
+                    label="Selecciona una lista"
+                    value=""
                     style={styles.pickerItem}
                   />
                   {bookLists.map((list) => (
                     <Picker.Item
                       key={list.id}
-                      label={list.name}
+                      label={`${list.name} (${list.entries?.length || 0} libros)`}
                       value={list.id.toString()}
                       style={styles.pickerItem}
                     />
@@ -150,6 +160,13 @@ export default function ProfileScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Create List Modal */}
+      <CreateListModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onListCreated={loadBookLists}
+      />
     </View>
   );
 }
@@ -231,8 +248,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#4682B4', // Steel blue color
-    marginBottom: 20,
-    textAlign: 'center',
+    flex: 1,
   },
   pickerContainer: {
     width: '100%',
@@ -296,5 +312,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  listsTitleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    width: '100%',
+  },
+  createListButton: {
+    backgroundColor: '#4682B4',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  createListButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
-import { RegisterRequest, APIResponse } from '@/lib/types/api';
+import { RegisterRequest, APIResponse, AuthResponse } from '@/lib/types/api';
 
 export async function POST(req: NextRequest) {
     try {
@@ -68,9 +68,20 @@ export async function POST(req: NextRequest) {
             }))
         });
 
-        return NextResponse.json<APIResponse>({
+        // Generar token para el nuevo usuario
+        const token = AuthService.generateToken(user.id);
+
+        return NextResponse.json<APIResponse<AuthResponse>>({
             success: true,
-            message: 'Usuario registrado exitosamente'
+            message: 'Usuario registrado exitosamente',
+            data: {
+                token,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    username: user.username
+                }
+            }
         }, { status: 201 });
 
     } catch (error) {

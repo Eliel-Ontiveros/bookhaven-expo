@@ -6,67 +6,96 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import SearchResults from '@/components/SearchResults';
 import { apiService } from '@/lib/api/service';
 import { Book } from '@/lib/api/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Book[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [recommendedBooks, setRecommendedBooks] = useState<Book[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true);
+  const { user } = useAuth();
 
-  // Mock data for demonstration (will be replaced with API calls)
-  const mockBooks: Book[] = [
-    {
-      id: '1',
-      title: 'La metamorfosis',
-      authors: 'Franz Kafka',
-      description: 'Una de las obras más importantes de la literatura universal...',
-      categories: ['Literatura'],
-      averageRating: 4.5,
-    },
-    {
-      id: '2',
-      title: 'Metamorfosis',
-      authors: 'Emanuele Coccia',
-      description: 'DE OVIDIO A LA PANDEMIA MUNDIAL. Por fin en castellano, el original e...',
-      categories: ['Filosofía'],
-      averageRating: 4.0,
-    },
-    {
-      id: '3',
-      title: 'Cien años de soledad',
-      authors: 'Gabriel García Márquez',
-      description: 'Una obra maestra del realismo mágico...',
-      categories: ['Literatura'],
-      averageRating: 4.8,
-    },
-  ];
+  // Cargar recomendaciones al inicializar la pantalla
+  useEffect(() => {
+    if (user) {
+      loadRecommendations();
+    } else {
+      loadPopularBooks();
+    }
+  }, [user]);
+
+  // Función para cargar recomendaciones del usuario autenticado
+  const loadRecommendations = async () => {
+    setLoadingRecommendations(true);
+    try {
+      console.log('🌟 Loading user recommendations...');
+      const response = await apiService.getUserRecommendations();
+      console.log('🌟 Recommendations response:', response);
+
+      if (response.success && response.data) {
+        const recommendationsData = Array.isArray(response.data) ? response.data : [];
+        setRecommendedBooks(recommendationsData);
+        console.log('✅ Recommendations loaded:', recommendationsData.length);
+      } else {
+        console.log('❌ Failed to load recommendations, loading popular books');
+        await loadPopularBooks();
+      }
+    } catch (error) {
+      console.error('❌ Error loading recommendations:', error);
+      await loadPopularBooks();
+    }
+    setLoadingRecommendations(false);
+  };
+
+  // Función para cargar libros populares como fallback
+  const loadPopularBooks = async () => {
+    setLoadingRecommendations(true);
+    try {
+      console.log('📚 Loading popular books...');
+
+      const popularQueries = ['bestseller', 'fiction', 'novel'];
+
+      for (const query of popularQueries) {
+        const response = await apiService.searchBooks({ query, limit: 20 });
+        if (response.success && response.data && Array.isArray(response.data) && response.data.length > 0) {
+          setRecommendedBooks(response.data.slice(0, 20));
+          console.log('✅ Popular books loaded:', response.data.length);
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading popular books:', error);
+      setRecommendedBooks([]);
+    }
+    setLoadingRecommendations(false);
+  };
 
   const handleSearch = async () => {
     if (searchQuery.trim()) {
       setIsSearching(true);
       try {
-        const response = await apiService.searchBooks({ query: searchQuery });
+        console.log('🔍 Searching for:', searchQuery);
+        const response = await apiService.searchBooks({
+          query: searchQuery,
+          limit: 20
+        });
+
         if (response.success && response.data) {
-          setSearchResults(response.data);
+          console.log('✅ Search successful:', response.data.length, 'books found');
+          setSearchResults(Array.isArray(response.data) ? response.data : []);
         } else {
-          // Fallback to mock data if API fails
-          const filtered = mockBooks.filter(book =>
-            book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            book.authors.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-          setSearchResults(filtered);
+          console.log('❌ Search failed:', response.error);
+          setSearchResults([]);
         }
       } catch (error) {
-        console.error('Search failed:', error);
-        // Fallback to mock data
-        const filtered = mockBooks.filter(book =>
-          book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          book.authors.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setSearchResults(filtered);
+        console.error('❌ Search error:', error);
+        setSearchResults([]);
       }
       setIsSearching(false);
     } else {
@@ -126,7 +155,7 @@ export default function HomeScreen() {
             <SearchResults results={searchResults} onBookPress={handleBookPress} />
           </View>
         ) : (
-          /* Welcome Section */
+          /* Welcome Section with Recommendations */
           <View style={styles.welcomeSection}>
             <View style={styles.welcomeCard}>
               <View style={styles.bookIconLarge}>
@@ -138,13 +167,36 @@ export default function HomeScreen() {
                 <Text style={styles.havenTitle}>HAVEN</Text>
               </Text>
             </View>
-            
-            <Text style={styles.welcomeTitle}>¡Bienvenido a BookHaven!</Text>
-            <Text style={styles.welcomeDescription}>
-              Tu espacio para descubrir, organizar y disfrutar de tus libros favoritos. 
-              Explora recomendaciones personalizadas, gestiona tus listas de lectura y 
-              mantén tu perfil actualizado.
+
+            <Text style={styles.welcomeTitle}>
+              {user ? `¡Hola, ${user.username}!` : '¡Bienvenido a BookHaven!'}
             </Text>
+            <Text style={styles.welcomeDescription}>
+              {user
+                ? 'Aquí tienes algunas recomendaciones personalizadas para ti.'
+                : 'Descubre libros populares y crea tu cuenta para recomendaciones personalizadas.'
+              }
+            </Text>
+
+            {/* Recommendations Section */}
+            <View style={styles.recommendationsSection}>
+              <Text style={styles.recommendationsTitle}>
+                {user ? 'Recomendado para ti' : 'Libros populares'}
+              </Text>
+
+              {loadingRecommendations ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#4682B4" />
+                  <Text style={styles.loadingText}>Cargando recomendaciones...</Text>
+                </View>
+              ) : recommendedBooks.length > 0 ? (
+                <SearchResults results={recommendedBooks} onBookPress={handleBookPress} />
+              ) : (
+                <Text style={styles.noRecommendationsText}>
+                  No hay recomendaciones disponibles en este momento.
+                </Text>
+              )}
+            </View>
           </View>
         )}
       </ScrollView>
@@ -282,6 +334,24 @@ const styles = StyleSheet.create({
   welcomeSection: {
     alignItems: 'center',
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+  },
+  recommendationsSection: {
+    width: '100%',
+    marginTop: 30,
+  },
+  recommendationsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4682B4',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  noRecommendationsText: {
+    fontSize: 16,
+    color: '#8B4513',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    padding: 20,
   },
 });

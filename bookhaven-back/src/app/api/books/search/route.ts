@@ -7,14 +7,28 @@ const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY;
 function transformGoogleBookToBookResponse(item: any): BookResponse {
     const volumeInfo = item.volumeInfo || {};
 
+    // Log para debugging
+    if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Transforming book:', {
+            id: item.id,
+            title: volumeInfo.title,
+            authors: volumeInfo.authors,
+            hasImage: !!volumeInfo.imageLinks
+        });
+    }
+
     return {
-        id: item.id,
+        id: item.id || `temp_${Date.now()}_${Math.random()}`,
         title: volumeInfo.title || 'Título no disponible',
         authors: volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Autor desconocido',
-        image: volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail,
-        description: volumeInfo.description,
+        image: volumeInfo.imageLinks?.thumbnail ||
+            volumeInfo.imageLinks?.smallThumbnail ||
+            volumeInfo.imageLinks?.small ||
+            volumeInfo.imageLinks?.medium ||
+            null,
+        description: volumeInfo.description || 'Descripción no disponible',
         categories: volumeInfo.categories || [],
-        averageRating: volumeInfo.averageRating
+        averageRating: volumeInfo.averageRating || null
     };
 }
 
@@ -46,14 +60,29 @@ export async function GET(req: NextRequest) {
         const startIndex = (page - 1) * limit;
         const url = `${GOOGLE_BOOKS_API_URL}?q=${encodeURIComponent(searchQuery)}&maxResults=${limit}&startIndex=${startIndex}&key=${API_KEY}`;
 
+        console.log('🔍 Google Books API URL:', url);
+
         const response = await fetch(url);
 
         if (!response.ok) {
-            throw new Error('Error al obtener datos de Google Books');
+            console.error('❌ Google Books API Error:', response.status, response.statusText);
+            throw new Error(`Error al obtener datos de Google Books: ${response.status}`);
         }
 
         const data = await response.json();
+        console.log('📚 Google Books Raw Response:', {
+            totalItems: data.totalItems,
+            itemsCount: data.items?.length || 0,
+            firstItem: data.items?.[0] ? {
+                id: data.items[0].id,
+                title: data.items[0].volumeInfo?.title,
+                authors: data.items[0].volumeInfo?.authors
+            } : 'No items'
+        });
+
         const books = (data.items || []).map(transformGoogleBookToBookResponse);
+        console.log('📖 Transformed Books:', books.slice(0, 2)); // Solo los primeros 2 para no saturar logs
+
         const totalItems = data.totalItems || 0;
 
         const paginationResponse: PaginationResponse<BookResponse> = {
