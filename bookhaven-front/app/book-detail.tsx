@@ -6,8 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Dimensions,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AddToListModal from '@/components/AddToListModal';
+import CommentsModal from '@/components/CommentsModal';
+import StarRating from '@/components/StarRating';
+import { Book } from '@/lib/api/types';
 
 interface BookDetailProps {
   route?: {
@@ -27,127 +34,144 @@ interface BookDetailProps {
 }
 
 export default function BookDetailScreen() {
-  const [userRating, setUserRating] = useState(0);
+  const [showAddToListModal, setShowAddToListModal] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
   const params = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-  // Parse book data from params or use default data
+  // Parse book data from params
   let book;
   try {
     book = params.book ? JSON.parse(params.book as string) : null;
   } catch (error) {
+    console.error('Error parsing book data:', error);
     book = null;
   }
 
-  // Use passed book data or default data
-  book = book || {
-    id: '1',
-    title: 'La metamorfosis',
-    author: 'Franz Kafka',
-    description: `Uno de los libros más singulares de la Europa del siglo XX, y sin duda uno de los más controvertidos de Franz Kafka, que ya es mucho, puesto que ninguna de sus obras suele dejar indiferente a nadie. Porque las autorías de este escritor checo doctorado en Derecho reflejan de una forma muy particular sus singularidades, puesto que todo en su vida iba en contra a su verdadera vocación, la literatura.Una obra de Kafka que refleja una visión del mundo verdaderamente particular y que vale la pena ser leída en detalle, para encontrar con cada nueva lectura, nueva comprensión, como quien quita las capas de una cebolla.Al despertar Gregorio Samsa una mañana, tras un sueño intranquilo, se encontró en su cama convertido en un monstruoso insecto. Tal es el abrupto comienzo, que nos sitúa de raíz bajo unas reglas distintas, de "La metamorfosis", sin duda alguna la obra de Franz Kafka que ha alcanzado mayor celebridad.Porque adquirir este libro: Por en esta apasionante obra encontrarás una pasión por los detalles, ya que el autor describe situaciones, paisajes y pensamientos con total profusión, sin descuidar absolutamente nada. Esto es algo que hace al lector ser parte de la propia narración, que a ratos parece sufrir tanto como el propio personaje principal.Una historia atrapante, incluso para aquel que ya la haya leído.`,
-    genre: 'Alienation (Social psychology)',
-    rating: 3.67,
-    totalRatings: 3,
-    coverUrl: undefined,
-  };
+  // Fallback to default data if no book provided
+  if (!book) {
+    book = {
+      id: '1',
+      title: 'Libro no encontrado',
+      authors: 'Autor desconocido',
+      description: 'No hay descripción disponible.',
+      categories: ['General'],
+      averageRating: 0,
+      image: undefined,
+    };
+  }
 
-  const handleRating = (rating: number) => {
-    setUserRating(rating);
-    console.log('User rated:', rating);
-  };
-
-  const renderStars = (rating: number, interactive: boolean = false, onPress?: (rating: number) => void) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 1; i <= 5; i++) {
-      let starColor = '#DDD';
-      let starText = '☆';
-
-      if (i <= fullStars) {
-        starColor = '#FFD700';
-        starText = '★';
-      } else if (i === fullStars + 1 && hasHalfStar) {
-        starColor = '#FFD700';
-        starText = '★';
-      }
-
-      stars.push(
-        <TouchableOpacity
-          key={i}
-          disabled={!interactive}
-          onPress={() => onPress && onPress(i)}
-          style={styles.starButton}
-        >
-          <Text style={[styles.starText, { color: starColor }]}>
-            {starText}
-          </Text>
-        </TouchableOpacity>
-      );
-    }
-
-    return <View style={styles.starsContainer}>{stars}</View>;
+  const handleGoBack = () => {
+    router.back();
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      >
+        {/* Header with back button integrated in content */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <Ionicons name="arrow-back" size={24} color="#4682B4" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Detalles del Libro</Text>
+          <View style={styles.headerRight} />
+        </View>
+
         {/* Book Title */}
         <Text style={styles.title}>{book.title}</Text>
 
-        <View style={styles.bookContainer}>
+        <View style={[styles.bookContainer, { flexDirection: screenWidth > 600 ? 'row' : 'column' }]}>
           {/* Book Cover */}
-          <View style={styles.bookCover}>
-            {book.coverUrl ? (
-              <Image source={{ uri: book.coverUrl }} style={styles.coverImage} />
+          <View style={[styles.bookCover, {
+            width: screenWidth > 600 ? screenWidth * 0.25 : screenWidth * 0.4,
+            height: screenWidth > 600 ? screenWidth * 0.35 : screenWidth * 0.6,
+            alignSelf: screenWidth > 600 ? 'flex-start' : 'center'
+          }]}>
+            {book.image ? (
+              <Image source={{ uri: book.image }} style={styles.coverImage} />
             ) : (
               <View style={styles.placeholderCover}>
-                <View style={styles.kafkaBookCover}>
-                  <Text style={styles.kafkaTitle}>La Metamorfosis</Text>
-                  <View style={styles.kafkaPortrait}>
-                    <Text style={styles.portraitText}>👤</Text>
-                  </View>
-                  <Text style={styles.kafkaAuthor}>Franz Kafka</Text>
-                </View>
+                <Text style={styles.placeholderText}>📖</Text>
+                <Text style={styles.placeholderTitle}>{book.title}</Text>
               </View>
             )}
           </View>
 
-          {/* Book Details */}
-          <View style={styles.bookDetails}>
-            {/* Author */}
-            <Text style={styles.authorLabel}>Autores: <Text style={styles.authorName}>{book.author}</Text></Text>
+          {/* Book Info */}
+          <View style={[styles.bookInfo, {
+            flex: screenWidth > 600 ? 1 : undefined,
+            paddingLeft: screenWidth > 600 ? 20 : 0,
+            paddingTop: screenWidth > 600 ? 0 : 20
+          }]}>
+            <Text style={styles.infoLabel}>Autores:</Text>
+            <Text style={styles.authorText}>{book.authors}</Text>
 
-            {/* Genres */}
-            <Text style={styles.genreLabel}>Géneros: <Text style={styles.genreName}>{book.genre}</Text></Text>
-            <Text style={styles.subGenre}>Calificación comedia:</Text>
+            <Text style={styles.infoLabel}>Géneros:</Text>
+            <Text style={styles.genreText}>
+              {Array.isArray(book.categories) && book.categories.length > 0
+                ? book.categories.join(', ')
+                : 'Género no especificado'}
+            </Text>
 
-            {/* Rating */}
-            <View style={styles.ratingSection}>
-              {renderStars(book.rating || 0)}
-              <Text style={styles.ratingText}>
-                ({(book.rating || 0).toFixed(2)} de {book.totalRatings || 0} calificaciones)
-              </Text>
-            </View>
-
-            {/* User Rating */}
-            <View style={styles.userRatingSection}>
-              <Text style={styles.userRatingLabel}>Tu calificación:</Text>
-              {renderStars(userRating, true, handleRating)}
-            </View>
-
-            {/* Description */}
-            <ScrollView style={styles.descriptionContainer} nestedScrollEnabled>
-              <Text style={styles.description}>{book.description}</Text>
-            </ScrollView>
+            <Text style={styles.infoLabel}>Calificación:</Text>
+            <StarRating
+              bookId={book.id}
+              size="medium"
+              onRatingChange={(rating) => {
+                console.log('User rated book:', rating);
+              }}
+            />
           </View>
         </View>
 
-        {/* Scroll Indicator */}
-        <View style={styles.scrollIndicator}>
-          <Text style={styles.scrollText}>⬇</Text>
+        {/* Description */}
+        <View style={styles.descriptionContainer}>
+          <Text style={styles.descriptionTitle}>Sinopsis:</Text>
+          <Text style={styles.descriptionText}>
+            {book.description || 'No hay descripción disponible para este libro.'}
+          </Text>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.buttonsContainer}>
+          <TouchableOpacity
+            style={[styles.actionButton, { width: screenWidth > 600 ? screenWidth * 0.4 : '100%' }]}
+            onPress={() => setShowAddToListModal(true)}
+          >
+            <Text style={styles.buttonText}>📚 Agregar a Lista</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { width: screenWidth > 600 ? screenWidth * 0.4 : '100%' }]}
+            onPress={() => setShowCommentsModal(true)}
+          >
+            <Text style={styles.buttonText}>💬 Ver Comentarios</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Add to List Modal */}
+      <AddToListModal
+        visible={showAddToListModal}
+        onClose={() => setShowAddToListModal(false)}
+        book={book as Book}
+        onSuccess={() => {
+          console.log('Book added to list successfully');
+        }}
+      />
+
+      {/* Comments Modal */}
+      <CommentsModal
+        visible={showCommentsModal}
+        onClose={() => setShowCommentsModal(false)}
+        bookId={book.id}
+        bookTitle={book.title}
+      />
     </View>
   );
 }
@@ -155,11 +179,35 @@ export default function BookDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5DC', // Light beige background
+    backgroundColor: '#F5F5DC',
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    marginBottom: 10,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F0F8FF',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#4682B4',
+    textAlign: 'center',
+  },
+  headerRight: {
+    width: 34, // Same width as back button for centering
   },
   content: {
     flex: 1,
-    padding: 20,
+    color: '#333',
+    paddingHorizontal: 20,
+    paddingTop: 30,
   },
   title: {
     fontSize: 24,
@@ -167,17 +215,80 @@ const styles = StyleSheet.create({
     color: '#8B4513',
     textAlign: 'center',
     marginBottom: 20,
+    lineHeight: 30,
   },
   bookContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
+    marginBottom: 30,
     gap: 20,
   },
   bookCover: {
-    width: 150,
-    height: 200,
+    width: 120,
+    height: 180,
     borderRadius: 10,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  placeholderCover: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#D2B48C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+    borderWidth: 2,
+    borderColor: '#8B4513',
+  },
+  placeholderText: {
+    fontSize: 40,
+    marginBottom: 10,
+  },
+  placeholderTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#8B4513',
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+  bookInfo: {
+    flex: 1,
+    paddingLeft: 10,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#8B4513',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  authorText: {
+    fontSize: 16,
+    color: '#4682B4',
+    fontWeight: '600',
+    marginBottom: 5,
+  },
+  genreText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  descriptionContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 20,
+    marginBottom: 30,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -187,123 +298,40 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  placeholderCover: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#F0F0F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  kafkaBookCover: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#D2B48C',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    padding: 10,
-    borderWidth: 2,
-    borderColor: '#8B4513',
-  },
-  kafkaTitle: {
-    fontSize: 16,
+  descriptionTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#8B4513',
-    textAlign: 'center',
-  },
-  kafkaPortrait: {
-    width: 60,
-    height: 80,
-    backgroundColor: '#8B4513',
-    borderRadius: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  portraitText: {
-    fontSize: 30,
-    color: '#FFFFFF',
-  },
-  kafkaAuthor: {
-    fontSize: 12,
-    color: '#8B4513',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  coverImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  bookDetails: {
-    flex: 1,
-    paddingLeft: 10,
-  },
-  authorLabel: {
-    fontSize: 14,
-    color: '#8B4513',
-    marginBottom: 8,
-  },
-  authorName: {
-    fontWeight: 'bold',
-  },
-  genreLabel: {
-    fontSize: 14,
-    color: '#8B4513',
-    marginBottom: 4,
-  },
-  genreName: {
-    fontWeight: 'normal',
-  },
-  subGenre: {
-    fontSize: 12,
-    color: '#8B4513',
-    marginBottom: 10,
-  },
-  ratingSection: {
     marginBottom: 15,
   },
-  starsContainer: {
-    flexDirection: 'row',
-    marginBottom: 5,
-  },
-  starButton: {
-    paddingHorizontal: 2,
-  },
-  starText: {
-    fontSize: 20,
-  },
-  ratingText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  userRatingSection: {
-    marginBottom: 15,
-  },
-  userRatingLabel: {
-    fontSize: 14,
-    color: '#8B4513',
-    marginBottom: 5,
-    fontWeight: 'bold',
-  },
-  descriptionContainer: {
-    backgroundColor: '#FFFACD',
-    borderRadius: 10,
-    padding: 15,
-    maxHeight: 200,
-    borderWidth: 1,
-    borderColor: '#DDD',
-  },
-  description: {
+  descriptionText: {
     fontSize: 14,
     color: '#333',
-    lineHeight: 20,
+    lineHeight: 22,
     textAlign: 'justify',
   },
-  scrollIndicator: {
-    alignItems: 'center',
-    paddingVertical: 10,
+  buttonsContainer: {
+    gap: 15,
+    marginBottom: 30,
   },
-  scrollText: {
-    fontSize: 20,
-    color: '#8B4513',
+  actionButton: {
+    backgroundColor: '#4682B4',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

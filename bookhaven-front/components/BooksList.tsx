@@ -5,9 +5,10 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { Book } from '@/lib/api/types';
-import BookCard from './BookCard';
+import SafeBookCard from './SafeBookCard';
 
 interface BooksListProps {
   books: Book[];
@@ -16,6 +17,11 @@ interface BooksListProps {
   onBookPress: (book: Book) => void;
   onEndReached?: () => void;
   horizontal?: boolean;
+  emptyMessage?: {
+    title: string;
+    subtitle: string;
+    icon?: string;
+  };
 }
 
 export default function BooksList({
@@ -24,10 +30,18 @@ export default function BooksList({
   loadingMore = false,
   onBookPress,
   onEndReached,
-  horizontal = false
+  horizontal = false,
+  emptyMessage = {
+    title: '📚 No se encontraron recomendaciones',
+    subtitle: 'Intenta con otros géneros o autores',
+    icon: '📚'
+  }
 }: BooksListProps) {
+  const { width: screenWidth } = Dimensions.get('window');
+  const isTablet = screenWidth > 600;
+
   const renderBookCard = ({ item }: { item: Book }) => (
-    <BookCard book={item} onPress={onBookPress} />
+    <SafeBookCard book={item} onPress={onBookPress} />
   );
 
   const renderFooter = () => {
@@ -52,13 +66,19 @@ export default function BooksList({
           renderItem={renderBookCard}
           keyExtractor={(item) => item.id}
           horizontal={horizontal}
-          numColumns={horizontal ? 1 : 2}
+          numColumns={horizontal ? 1 : (isTablet ? 3 : 2)}
+          key={horizontal ? 'horizontal' : (isTablet ? 'tablet' : 'phone')} // Force re-render when orientation changes
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             horizontal ? styles.booksList : styles.booksGrid,
-            !horizontal && { flexGrow: 1 }
+            !horizontal && {
+              flexGrow: 1,
+              paddingHorizontal: isTablet ? 16 : 8,
+              paddingBottom: 20
+            }
           ]}
+          columnWrapperStyle={!horizontal && (isTablet ? 3 : 2) > 1 ? { justifyContent: 'space-between', paddingHorizontal: 8 } : undefined}
           ItemSeparatorComponent={() => (
             <View style={horizontal ? styles.bookSeparator : styles.bookGridSeparator} />
           )}
@@ -68,8 +88,9 @@ export default function BooksList({
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>📚 No se encontraron recomendaciones</Text>
-          <Text style={styles.emptySubtext}>Intenta con otros géneros o autores</Text>
+          <Text style={styles.emptyIcon}>{emptyMessage.icon}</Text>
+          <Text style={styles.emptyText}>{emptyMessage.title}</Text>
+          <Text style={styles.emptySubtext}>{emptyMessage.subtitle}</Text>
         </View>
       )}
     </View>
@@ -89,13 +110,13 @@ const styles = StyleSheet.create({
   },
   booksGrid: {
     paddingVertical: 10,
-    paddingHorizontal: 5,
+    paddingHorizontal: 0, // Remove horizontal padding since we're using columnWrapperStyle
   },
   bookSeparator: {
-    width: 15,
+    width: 12,
   },
   bookGridSeparator: {
-    height: 15,
+    height: 12,
   },
   loadingContainer: {
     flex: 1,
@@ -122,6 +143,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 40,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 16,
   },
   emptyText: {
     fontSize: 16,

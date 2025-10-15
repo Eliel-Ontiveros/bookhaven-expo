@@ -7,7 +7,7 @@ import { APIResponse, BookResponse } from '@/lib/types/api';
 async function fetchGoogleBooksRecommendations(
     favoriteGenres: string[],
     excludeBookIds: string[],
-    limit: number = 30
+    limit: number = 5
 ): Promise<any[]> {
     try {
         const recommendations: any[] = [];
@@ -52,13 +52,13 @@ async function fetchGoogleBooksRecommendations(
         };
 
         // Para cada género favorito, buscar libros
-        for (const genre of favoriteGenres.slice(0, 12)) { // Limitar a 12 géneros para no sobrecargar la API
+        for (const genre of favoriteGenres.slice(0, 3)) { // Limitar a 3 géneros para no sobrecargar la API
             const searchTerm = genreMapping[genre] || genre.toLowerCase();
             const query = `subject:${searchTerm}`;
 
             console.log(`🔍 Searching Google Books for genre: ${genre} (${searchTerm})`);
 
-            const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6&orderBy=relevance&langRestrict=en`;
+            const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&orderBy=relevance&langRestrict=en`;
 
             const response = await fetch(googleBooksUrl, {
                 headers: {
@@ -70,7 +70,7 @@ async function fetchGoogleBooksRecommendations(
                 const data = await response.json();
 
                 if (data.items && Array.isArray(data.items)) {
-                    for (const item of data.items.slice(0, 12)) { // Máximo 12 por género
+                    for (const item of data.items.slice(0, 4)) { // Máximo 4 por género
                         const volumeInfo = item.volumeInfo;
 
                         if (!volumeInfo.title || !volumeInfo.authors) continue;
@@ -96,18 +96,6 @@ async function fetchGoogleBooksRecommendations(
                         };
 
                         recommendations.push(book);
-
-                        // Guardar en la base de datos para futuras consultas
-                        try {
-                            await prisma.book.upsert({
-                                where: { id: bookId },
-                                update: book,
-                                create: book
-                            });
-                        } catch (dbError) {
-                            console.error('Error saving book to database:', dbError);
-                            // Continuar aunque falle el guardado en BD
-                        }
 
                         if (recommendations.length >= limit) break;
                     }
@@ -159,81 +147,32 @@ export async function GET(req: NextRequest) {
 
         const userBookIds = userBooks.map(entry => entry.bookId);
 
-        // Obtener libros de la base de datos que coincidan con los géneros favoritos
-        // y que no estén ya en las listas del usuario
+        console.log(`📚 User has ${userBookIds.length} books in their lists`);
+
+        // Obtener recomendaciones desde Google Books API basadas en géneros favoritos
         let recommendations: any[] = [];
 
         if (userGenres.length > 0) {
-            recommendations = await prisma.book.findMany({
-                where: {
-                    AND: [
-                        {
-                            categories: {
-                                hasSome: userGenres.map(g => g.name)
-                            }
-                        },
-                        {
-                            id: {
-                                notIn: userBookIds
-                            }
-                        }
-                    ]
-                },
-                select: {
-                    id: true,
-                    title: true,
-                    authors: true,
-                    image: true,
-                    description: true,
-                    categories: true,
-                    averageRating: true
-                },
-                take: 10,
-                orderBy: {
-                    averageRating: 'desc'
-                }
-            });
-        }
-
-        // Si no hay suficientes recomendaciones basadas en géneros, 
-        // buscar en Google Books API
-        if (recommendations.length < 8) {
-            const googleBooksRecommendations = await fetchGoogleBooksRecommendations(
+            console.log('🎭 Getting recommendations based on favorite genres');
+            recommendations = await fetchGoogleBooksRecommendations(
                 userGenres.map(g => g.name),
                 userBookIds,
+                10
+            );
+        }
+
+        // Si no hay géneros favoritos o no hay suficientes recomendaciones, 
+        // buscar libros populares de géneros generales
+        if (recommendations.length < 5) {
+            console.log('📈 Adding popular books to reach minimum recommendations');
+            const popularGenres = ['fiction', 'fantasy', 'mystery', 'romance', 'science fiction'];
+            const additionalRecommendations = await fetchGoogleBooksRecommendations(
+                popularGenres,
+                [...userBookIds, ...recommendations.map(r => r.id)],
                 10 - recommendations.length
             );
 
-            recommendations = [...recommendations, ...googleBooksRecommendations];
-        }
-
-        // Si aún no hay suficientes, agregar libros populares de la base de datos
-        if (recommendations.length < 5) {
-            const popularBooks = await prisma.book.findMany({
-                where: {
-                    id: {
-                        notIn: [...userBookIds, ...recommendations.map(r => r.id)]
-                    },
-                    averageRating: {
-                        gte: 4.0
-                    }
-                },
-                select: {
-                    id: true,
-                    title: true,
-                    authors: true,
-                    image: true,
-                    description: true,
-                    categories: true,
-                    averageRating: true
-                },
-                take: 10 - recommendations.length,
-                orderBy: {
-                    averageRating: 'desc'
-                }
-            });
-
-            recommendations = [...recommendations, ...popularBooks];
+            recommendations = [...recommendations, ...additionalRecommendations];
         }
 
         console.log(`📚 Final recommendations for user ${user.id}:`, recommendations.length);

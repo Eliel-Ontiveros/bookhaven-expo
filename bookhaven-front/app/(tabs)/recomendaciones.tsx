@@ -5,7 +5,10 @@ import {
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
+import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '@/lib/api/service';
 import { Book } from '@/lib/api/types';
 import FilterButtons from '@/components/FilterButtons';
@@ -24,13 +27,34 @@ export default function RecommendationsScreen() {
   const [hasMore, setHasMore] = useState(true);
   const debounceTimerRef = useRef<number | null>(null);
 
+  const insets = useSafeAreaInsets();
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
   useEffect(() => {
     loadInitialBooks();
   }, []);
 
   useEffect(() => {
-    handleSearch();
-  }, [selectedGenre, authorQuery]);
+    // Debounce para la búsqueda por autor
+    if (filterBy === 'author') {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        handleSearch();
+      }, 500); // 500ms de debounce para autor
+    } else {
+      // Para género, búsqueda inmediata
+      handleSearch();
+    }
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [selectedGenre, authorQuery, filterBy]);
 
   // Función para cargar libros iniciales (recomendaciones del usuario)
   const loadInitialBooks = async () => {
@@ -71,29 +95,113 @@ export default function RecommendationsScreen() {
     try {
       let response;
 
+      console.log(`🔍 Searching with filter: ${filterBy}, genre: ${selectedGenre}, author: ${authorQuery}`);
+
       if (filterBy === 'genre' && selectedGenre) {
+        console.log(`🎭 Searching books by genre: ${selectedGenre}`);
         response = await apiService.searchBooksByGenre(selectedGenre, page, 20);
       } else if (filterBy === 'author' && authorQuery.trim()) {
-        response = await apiService.searchBooksByAuthor(authorQuery.trim(), page, 20);
+        console.log(`👤 Searching books by author: ${authorQuery}`);
+
+        // Validar que el nombre del autor tenga al menos 2 caracteres para una búsqueda efectiva
+        if (authorQuery.trim().length < 2) {
+          console.log('👤 Author query too short, loading initial books');
+          response = await apiService.searchBooks({ query: 'bestseller', page, limit: 20 });
+        } else {
+          // Mejorar la búsqueda por autor con retry si no encuentra resultados
+          response = await apiService.searchBooksByAuthor(authorQuery.trim(), page, 20);
+
+          // Si no encuentra resultados en la primera página, intentar con una búsqueda más amplia
+          if (response.success && page === 1) {
+            let booksData: any[] = [];
+
+            if (Array.isArray(response.data)) {
+              booksData = response.data;
+            } else if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+              booksData = Array.isArray((response.data as any).data) ? (response.data as any).data : [];
+            }
+
+            // Si no hay resultados, intentar búsqueda más flexible
+            if (booksData.length === 0) {
+              console.log(`👤 No results for "${authorQuery}", trying broader search...`);
+              const fallbackQuery = authorQuery.split(' ')[0]; // Usar solo el primer nombre/apellido
+              response = await apiService.searchBooks({
+                query: `inauthor:${fallbackQuery}`,
+                page,
+                limit: 20
+              });
+            }
+          }
+        }
       } else {
         // Búsqueda por defecto
+        console.log(`🔍 Default search with query: ${query}`);
         response = await apiService.searchBooks({ query, page, limit: 20 });
       }
 
-      if (response.success && response.data && Array.isArray(response.data)) {
-        const newBooks = response.data.map((book: any) => ({
-          id: book.id || String(Math.random()),
-          title: book.title || 'Título no disponible',
-          authors: Array.isArray(book.authors) ? book.authors.join(', ') : (book.authors || 'Autor desconocido'),
-          description: book.description || 'Descripción no disponible',
-          categories: Array.isArray(book.categories) ? book.categories : ['General'],
-          averageRating: book.averageRating || 0,
-          image: book.image || book.coverUrl || undefined,
-        }));
+      console.log('📡 API Response:', { success: response.success, dataType: typeof response.data, hasData: !!response.data });
+
+      // La respuesta puede tener dos estructuras: con paginación o directa
+      let booksData: any[] = [];
+      if (response.success && response.data) {
+        // Si la respuesta tiene estructura de paginación
+        if (typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
+          booksData = response.data.data;
+          console.log(`📦 Found books in paginated response: ${booksData.length}`);
+        }
+        // Si la respuesta es directamente un array
+        else if (Array.isArray(response.data)) {
+          booksData = response.data;
+          console.log(`📦 Found books in direct response: ${booksData.length}`);
+        }
+      }
+
+      if (booksData.length > 0) {
+        console.log(`✅ Processing ${booksData.length} books from API`);
+        const newBooks = booksData.map((book: any, index: number) => {
+          // Validar que el objeto book existe y tiene las propiedades necesarias
+          if (!book || typeof book !== 'object') {
+            console.warn(`⚠️ Invalid book object at index ${index}:`, book);
+            return null;
+          }
+
+          // Log para debuggear datos problemáticos
+          if (index < 3) {
+            console.log(`📖 Processing book ${index}:`, {
+              id: book.id,
+              title: book.title,
+              authors: book.authors,
+              titleType: typeof book.title,
+              authorsType: typeof book.authors
+            });
+          }
+
+          const processedBook = {
+            id: book.id ? String(book.id) : `temp_${Date.now()}_${index}`,
+            title: book.title && typeof book.title === 'string' ? book.title : 'Título no disponible',
+            authors: book.authors ? (Array.isArray(book.authors) ? book.authors.join(', ') : String(book.authors)) : 'Autor desconocido',
+            description: book.description && typeof book.description === 'string' ? book.description : 'Descripción no disponible',
+            categories: Array.isArray(book.categories) ? book.categories : (book.categories ? [String(book.categories)] : ['General']),
+            averageRating: book.averageRating && typeof book.averageRating === 'number' ? book.averageRating : 0,
+            image: book.image && typeof book.image === 'string' ? book.image : (book.coverUrl && typeof book.coverUrl === 'string' ? book.coverUrl : undefined),
+          };
+
+          // Validar el resultado final
+          Object.keys(processedBook).forEach(key => {
+            const value = processedBook[key as keyof typeof processedBook];
+            if (value === null || (typeof value === 'string' && value.includes('null'))) {
+              console.warn(`⚠️ Potential null value in ${key}:`, value);
+            }
+          });
+
+          return processedBook;
+        }).filter(book => book !== null); // Filtrar libros inválidos
 
         if (reset) {
+          console.log(`📚 Setting ${newBooks.length} books (reset)`);
           setBooks(newBooks);
         } else {
+          console.log(`📚 Adding ${newBooks.length} more books`);
           setBooks(prevBooks => [...prevBooks, ...newBooks]);
         }
 
@@ -102,6 +210,10 @@ export default function RecommendationsScreen() {
 
         console.log(`✅ Books loaded: ${newBooks.length} (page ${page})`);
       } else {
+        console.log('❌ No books found or invalid response structure');
+        if (reset) {
+          setBooks([]);
+        }
         setHasMore(false);
       }
     } catch (error) {
@@ -128,53 +240,99 @@ export default function RecommendationsScreen() {
 
   // Manejar cambios en los filtros
   const handleSearch = () => {
-    if (filterBy === 'author' && authorQuery.trim()) {
-      debouncedSearch(authorQuery);
+    console.log('🔍 Handling search with:', { filterBy, selectedGenre, authorQuery });
+    console.log('🔍 Current state check:', {
+      filterBy,
+      selectedGenre: `"${selectedGenre}"`,
+      authorQuery: `"${authorQuery}"`,
+      selectedGenreLength: selectedGenre.length,
+      authorQueryLength: authorQuery.length
+    });
+
+    if (filterBy === 'author') {
+      if (authorQuery.trim().length >= 2) {
+        console.log('📚 Searching by author:', authorQuery);
+        searchBooks(authorQuery, 1, true);
+      } else if (authorQuery.trim().length === 0) {
+        // Si se borra todo el texto de autor, cargar libros iniciales
+        console.log('🌟 Loading initial books (empty author)');
+        loadInitialBooks();
+      }
+      // No hacer nada si hay 1 caracter (esperar más entrada)
     } else if (filterBy === 'genre' && selectedGenre) {
+      console.log('🎭 Searching by genre:', selectedGenre);
       searchBooks(selectedGenre, 1, true);
-    } else if (!selectedGenre && !authorQuery.trim()) {
+    } else {
       // Si no hay filtros activos, mostrar recomendaciones generales
-      searchBooks('fiction', 1, true);
+      console.log('🌟 Loading general recommendations (no filters active)');
+      loadInitialBooks();
     }
   };
 
   // Manejar cambios en los filtros
   const handleFilterChange = (filter: 'author' | 'genre') => {
+    console.log('🔄 Changing filter to:', filter);
     setFilterBy(filter);
     setSelectedGenre('');
     setAuthorQuery('');
     setCurrentPage(1);
+    setBooks([]); // Limpiar libros al cambiar filtro
+    setHasMore(true);
 
     if (filter === 'genre') {
-      // Mostrar recomendaciones generales al cambiar a filtro por género
-      searchBooks('fiction', 1, true);
+      // Al cambiar a filtro por género, mostrar recomendaciones generales
+      console.log('🎭 Switched to genre filter - loading general recommendations');
+      loadInitialBooks();
     } else {
-      // Limpiar resultados al cambiar a filtro por autor
-      setBooks([]);
+      // Al cambiar a filtro por autor, limpiar resultados
+      console.log('👤 Switched to author filter - awaiting author input');
     }
   };
 
   const handleGenreChange = (genre: string) => {
+    console.log('🎭 Genre selected:', genre);
     setSelectedGenre(genre);
   };
 
   const handleAuthorChange = (author: string) => {
+    console.log('👤 Author query changed:', author);
     setAuthorQuery(author);
+
+    // Reset pagination cuando cambia la búsqueda
+    setCurrentPage(1);
+    setHasMore(true);
   };
 
   const handleBookPress = (book: Book) => {
-    console.log('Book selected:', book);
-    // Aquí podrías navegar a la pantalla de detalles del libro
+    console.log('📖 Navigating to book details:', book.title);
+    router.push({
+      pathname: '/book-detail',
+      params: {
+        book: JSON.stringify({
+          id: book.id,
+          title: book.title,
+          authors: book.authors,
+          description: book.description,
+          image: book.image,
+          categories: book.categories,
+          averageRating: book.averageRating
+        })
+      }
+    });
   };
 
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
       const nextPage = currentPage + 1;
+      console.log(`⬇️ Loading more books - page ${nextPage}`);
 
       if (filterBy === 'genre' && selectedGenre) {
         searchBooks(selectedGenre, nextPage, false);
       } else if (filterBy === 'author' && authorQuery.trim()) {
         searchBooks(authorQuery.trim(), nextPage, false);
+      } else {
+        // Para recomendaciones generales no se permite paginación
+        console.log('⚠️ Load more not available for general recommendations');
       }
     }
   };
@@ -184,13 +342,17 @@ export default function RecommendationsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.content, { paddingHorizontal: screenWidth * 0.05 }]}>
         {/* Title */}
-        <Text style={styles.title}>Recomendaciones</Text>
+        <Text style={[styles.title, { fontSize: screenWidth > 600 ? 32 : 28 }]}>Recomendaciones</Text>
 
         {/* Filter Buttons */}
-        <View style={styles.filterContainer}>
+        <View style={[styles.filterContainer, {
+          flexDirection: screenWidth > 600 ? 'row' : 'row',
+          maxWidth: screenWidth > 600 ? screenWidth * 0.6 : '100%',
+          alignSelf: 'center'
+        }]}>
           <TouchableOpacity
             style={[
               styles.filterButton,
@@ -246,6 +408,25 @@ export default function RecommendationsScreen() {
           onBookPress={handleBookPress}
           onEndReached={handleLoadMore}
           horizontal={false}
+          emptyMessage={
+            filterBy === 'author' && authorQuery.trim().length >= 2
+              ? {
+                title: `👤 No se encontraron libros de "${authorQuery}"`,
+                subtitle: 'Intenta con otro autor o verifica la ortografía',
+                icon: '🔍'
+              }
+              : filterBy === 'genre' && selectedGenre
+                ? {
+                  title: `📚 No se encontraron libros de ${selectedGenre}`,
+                  subtitle: 'Intenta con otro género',
+                  icon: '📖'
+                }
+                : {
+                  title: '📚 No se encontraron recomendaciones',
+                  subtitle: 'Selecciona un género o busca por autor',
+                  icon: '📚'
+                }
+          }
         />
       </View>
     </SafeAreaView>
@@ -255,56 +436,68 @@ export default function RecommendationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5DC', // Light beige background
+    backgroundColor: '#F5F5DC',
   },
   content: {
     flex: 1,
-    padding: 20,
+    paddingTop: 10,
   },
   title: {
-    fontSize: 24,
     fontWeight: 'bold',
-    color: '#CD5C5C', // Coral red
+    color: '#4682B4',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 25,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   filterContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    borderRadius: 8,
+    marginBottom: 25,
+    borderRadius: 12,
     backgroundColor: '#FFFFFF',
     padding: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   filterButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 6,
+    paddingVertical: Dimensions.get('window').width > 600 ? 18 : 15,
+    paddingHorizontal: Dimensions.get('window').width > 600 ? 25 : 20,
+    borderRadius: 8,
     alignItems: 'center',
+    margin: 2,
   },
   filterButtonActive: {
-    backgroundColor: '#CD5C5C',
+    backgroundColor: '#4682B4',
+    shadowColor: '#4682B4',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   filterButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: Dimensions.get('window').width > 600 ? 18 : 16,
+    fontWeight: '600',
     color: '#666666',
   },
   filterButtonTextActive: {
     color: '#FFFFFF',
+    fontWeight: '700',
   },
   selectedGenreTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#CD5C5C',
+    color: '#4682B4',
     marginBottom: 15,
-  },
-  scrollIndicator: {
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  scrollText: {
-    fontSize: 20,
-    color: '#8B4513',
+    textAlign: 'center',
   },
 });

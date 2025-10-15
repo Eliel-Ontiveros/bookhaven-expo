@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/lib/api/service';
 import { BookList } from '@/lib/api/types';
 import CreateListModal from '@/components/CreateListModal';
+import BookListModal from '@/components/BookListModal';
 
 export default function ProfileScreen() {
   const [selectedList, setSelectedList] = useState('');
@@ -19,6 +20,8 @@ export default function ProfileScreen() {
   const [bookLists, setBookLists] = useState<BookList[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBookListModal, setShowBookListModal] = useState(false);
+  const [selectedListData, setSelectedListData] = useState<{ id: number; name: string } | null>(null);
 
   useEffect(() => {
     loadBookLists();
@@ -47,6 +50,20 @@ export default function ProfileScreen() {
 
   const handleNavigation = (section: string) => {
     console.log('Navigate to:', section);
+  };
+
+  const handleListSelection = (listId: string) => {
+    setSelectedList(listId);
+    if (listId) {
+      const selectedListObj = bookLists.find(list => list.id.toString() === listId);
+      if (selectedListObj) {
+        setSelectedListData({
+          id: selectedListObj.id,
+          name: selectedListObj.name
+        });
+        setShowBookListModal(true);
+      }
+    }
   };
 
   if (loading || !user) {
@@ -127,7 +144,7 @@ export default function ProfileScreen() {
                 <Picker
                   selectedValue={selectedList}
                   style={styles.picker}
-                  onValueChange={(itemValue) => setSelectedList(itemValue)}
+                  onValueChange={(itemValue) => handleListSelection(itemValue)}
                   dropdownIconColor="#8B4513"
                 >
                   <Picker.Item
@@ -167,6 +184,20 @@ export default function ProfileScreen() {
         onClose={() => setShowCreateModal(false)}
         onListCreated={loadBookLists}
       />
+
+      {/* Book List Modal */}
+      {selectedListData && (
+        <BookListModal
+          visible={showBookListModal}
+          onClose={() => {
+            setShowBookListModal(false);
+            setSelectedList(''); // Reset selection
+            setSelectedListData(null);
+          }}
+          listId={selectedListData.id}
+          listName={selectedListData.name}
+        />
+      )}
     </View>
   );
 }

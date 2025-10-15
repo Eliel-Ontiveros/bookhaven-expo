@@ -346,23 +346,44 @@ class APIService {
 
   // Advanced search methods
   async searchBooksByGenre(genre: string, page: number = 1, limit: number = 20): Promise<APIResponse<Book[]>> {
-    const params = new URLSearchParams({
-      query: `subject:${genre}`,
-      page: page.toString(),
-      limit: limit.toString()
-    });
+    // Usar una búsqueda más específica para géneros
+    const searchParams = {
+      query: `subject:"${genre}"`, // Usar comillas para búsqueda exacta
+      page: page,
+      limit: limit,
+    };
 
-    return this.request<Book[]>(`${API_CONFIG.ENDPOINTS.BOOKS_SEARCH}?${params.toString()}`);
+    return this.searchBooks(searchParams);
   }
 
   async searchBooksByAuthor(author: string, page: number = 1, limit: number = 20): Promise<APIResponse<Book[]>> {
-    const params = new URLSearchParams({
-      query: `inauthor:${author}`,
-      page: page.toString(),
-      limit: limit.toString()
-    });
+    // Mejorar la búsqueda de autores para mayor flexibilidad
+    const cleanAuthor = author.trim();
+    let query = '';
 
-    return this.request<Book[]>(`${API_CONFIG.ENDPOINTS.BOOKS_SEARCH}?${params.toString()}`);
+    if (cleanAuthor.includes(' ')) {
+      // Para nombres completos, intentar múltiples variaciones
+      const words = cleanAuthor.split(' ').filter(word => word.length > 0);
+      const fullName = words.join(' ');
+      const firstName = words[0];
+      const lastName = words[words.length - 1];
+
+      // Buscar: nombre completo exacto, nombre completo parcial, solo apellido, solo nombre
+      query = `inauthor:"${fullName}" OR inauthor:"${firstName}" OR inauthor:"${lastName}" OR inauthor:${cleanAuthor}`;
+    } else {
+      // Para una sola palabra, buscar tanto exacto como parcial
+      query = `inauthor:"${cleanAuthor}" OR inauthor:${cleanAuthor}`;
+    }
+
+    console.log(`👤 Enhanced author search query: ${query}`);
+
+    const searchParams = {
+      query: query,
+      page: page,
+      limit: limit,
+    };
+
+    return this.searchBooks(searchParams);
   }
 
   async searchBooksAdvanced(params: {
@@ -373,24 +394,25 @@ class APIService {
   }): Promise<APIResponse<Book[]>> {
     const { genre, author, page = 1, limit = 20 } = params;
 
+    // Construir query mejorado con comillas para búsquedas exactas
     let query = '';
     if (genre && author) {
-      query = `subject:${genre} inauthor:${author}`;
+      query = `subject:"${genre}" inauthor:"${author}"`;
     } else if (genre) {
-      query = `subject:${genre}`;
+      query = `subject:"${genre}"`;
     } else if (author) {
-      query = `inauthor:${author}`;
+      query = `inauthor:"${author}"`;
     } else {
-      query = 'fiction'; // Default fallback
+      query = 'bestseller'; // Default fallback mejorado
     }
 
-    const searchParams = new URLSearchParams({
+    const searchParams = {
       query,
-      page: page.toString(),
-      limit: limit.toString()
-    });
+      page,
+      limit
+    };
 
-    return this.request<Book[]>(`${API_CONFIG.ENDPOINTS.BOOKS_SEARCH}?${searchParams.toString()}`);
+    return this.searchBooks(searchParams);
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,10 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SearchResults from '@/components/SearchResults';
 import { apiService } from '@/lib/api/service';
 import { Book } from '@/lib/api/types';
@@ -20,6 +23,9 @@ export default function HomeScreen() {
   const [recommendedBooks, setRecommendedBooks] = useState<Book[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(true);
   const { user } = useAuth();
+
+  const insets = useSafeAreaInsets();
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
   // Cargar recomendaciones al inicializar la pantalla
   useEffect(() => {
@@ -76,37 +82,115 @@ export default function HomeScreen() {
     setLoadingRecommendations(false);
   };
 
-  const handleSearch = async () => {
-    if (searchQuery.trim()) {
-      setIsSearching(true);
-      try {
-        console.log('🔍 Searching for:', searchQuery);
-        const response = await apiService.searchBooks({
-          query: searchQuery,
-          limit: 20
-        });
+  // Búsqueda debounced para mejor UX
+  const debouncedSearch = useCallback((query: string) => {
+    const timeoutId = setTimeout(() => {
+      if (query.trim().length >= 2) {
+        performSearch(query);
+      } else if (query.trim().length === 0) {
+        setSearchResults([]);
+        setIsSearching(false);
+      }
+    }, 500); // Esperar 500ms después de que el usuario deje de escribir
 
-        if (response.success && response.data) {
-          console.log('✅ Search successful:', response.data.length, 'books found');
-          setSearchResults(Array.isArray(response.data) ? response.data : []);
-        } else {
-          console.log('❌ Search failed:', response.error);
-          setSearchResults([]);
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  // Función separada para realizar la búsqueda
+  const performSearch = async (query: string) => {
+    setIsSearching(true);
+    try {
+      console.log('🔍 Searching for:', query);
+
+      // Mejorar la búsqueda para hacerla más flexible
+      const enhancedQuery = enhanceSearchQuery(query.trim());
+      console.log('🔧 Enhanced query:', enhancedQuery);
+
+      const response = await apiService.searchBooks({
+        query: enhancedQuery,
+        limit: 20
+      });
+
+      if (response.success && response.data) {
+        // Manejar estructura de respuesta con paginación
+        let books: any[] = [];
+
+        if (Array.isArray(response.data)) {
+          // Respuesta directa
+          books = response.data;
+        } else if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+          // Respuesta con paginación
+          books = Array.isArray((response.data as any).data) ? (response.data as any).data : [];
         }
-      } catch (error) {
-        console.error('❌ Search error:', error);
+
+        console.log('✅ Search successful:', books.length, 'books found');
+        setSearchResults(books);
+      } else {
+        console.log('❌ Search failed:', response.error);
         setSearchResults([]);
       }
-      setIsSearching(false);
+    } catch (error) {
+      console.error('❌ Search error:', error);
+      setSearchResults([]);
+    }
+    setIsSearching(false);
+  };
+
+  const handleSearch = async () => {
+    if (searchQuery.trim()) {
+      await performSearch(searchQuery);
     } else {
       setSearchResults([]);
       setIsSearching(false);
     }
   };
 
+  // Efecto para búsqueda en tiempo real
+  useEffect(() => {
+    const cleanup = debouncedSearch(searchQuery);
+    return cleanup;
+  }, [searchQuery, debouncedSearch]);
+
+  // Función para mejorar las búsquedas de título
+  const enhanceSearchQuery = (query: string): string => {
+    // Limpiar la query
+    const cleanQuery = query.toLowerCase().trim();
+
+    // Si la búsqueda contiene múltiples palabras, buscar por título con flexibilidad
+    const words = cleanQuery.split(/\s+/).filter(word => word.length > 0);
+
+    if (words.length === 1) {
+      // Para una sola palabra, buscar en título o autor
+      return `intitle:"${words[0]}" OR inauthor:"${words[0]}" OR "${words[0]}"`;
+    } else if (words.length <= 3) {
+      // Para 2-3 palabras, priorizar búsqueda de título completo pero también palabras individuales
+      const fullPhrase = words.join(' ');
+      const individualWords = words.map(word => `intitle:"${word}"`).join(' OR ');
+      return `intitle:"${fullPhrase}" OR (${individualWords})`;
+    } else {
+      // Para más de 3 palabras, buscar la frase completa y las primeras 3 palabras
+      const fullPhrase = words.join(' ');
+      const firstThreeWords = words.slice(0, 3).join(' ');
+      return `intitle:"${fullPhrase}" OR intitle:"${firstThreeWords}"`;
+    }
+  };
+
   const handleBookPress = (book: Book) => {
-    console.log('Book selected:', book);
-    // Navigate to book details or handle book selection
+    console.log('📖 Navigating to book details:', book.title);
+    router.push({
+      pathname: '/book-detail',
+      params: {
+        book: JSON.stringify({
+          id: book.id,
+          title: book.title,
+          authors: book.authors,
+          description: book.description,
+          image: book.image,
+          categories: book.categories,
+          averageRating: book.averageRating
+        })
+      }
+    });
   };
 
   const handleNavigation = (section: string) => {
@@ -120,15 +204,21 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Main Content */}
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: screenWidth * 0.05 }]}
+      >
         {/* Search Section */}
         <View style={styles.searchSection}>
-          <View style={styles.searchContainer}>
+          <View style={[styles.searchContainer, {
+            maxWidth: screenWidth > 600 ? screenWidth * 0.8 : '100%',
+            alignSelf: 'center'
+          }]}>
             <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar libros..."
+              style={[styles.searchInput, { fontSize: screenWidth > 600 ? 18 : 16 }]}
+              placeholder="Buscar por título o autor... (escribe al menos 2 caracteres)"
               placeholderTextColor="#8B4513"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -207,20 +297,19 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5DC', // Light beige background
+    backgroundColor: '#F5F5DC',
   },
   content: {
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    paddingVertical: 20,
     minHeight: '100%',
   },
-
   welcomeCard: {
-    backgroundColor: '#E6E6FA', // Light lavender
+    backgroundColor: '#E6E6FA',
     borderRadius: 20,
-    padding: 30,
+    padding: Dimensions.get('window').width > 600 ? 40 : 30,
     alignItems: 'center',
     marginBottom: 30,
     shadowColor: '#000',
