@@ -9,11 +9,18 @@ import {
   ScrollView,
   Alert,
   Modal,
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '@/contexts/AuthContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export default function RegistroScreen() {
   const [username, setUsername] = useState('');
@@ -26,6 +33,8 @@ export default function RegistroScreen() {
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const { register, loading } = useAuth();
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
 
   const genres = [
     'Ficción', 'Misterio', 'Romance',
@@ -108,7 +117,7 @@ export default function RegistroScreen() {
         favoriteGenres: selectedGenres,
       });
       console.log('✅ Register completed successfully');
-      
+
       // Redirigir explícitamente a la pantalla de inicio
       console.log('🚀 Redirecting to inicio...');
       router.replace('/inicio');
@@ -123,61 +132,85 @@ export default function RegistroScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-    <View style={styles.content}>
-          <View style={styles.registerCard}>
-            {/* Logo and Book Icon */}
-            <View style={styles.logoContainer}>
-              <View style={styles.bookIcon}>
-                <Text style={styles.bookText}>📖</Text>
-              </View>
-              <Text style={styles.brandText}>
-                <Text style={styles.bookText}>BOOK</Text>
-                {'\n'}
-                <Text style={styles.havenText}>HAVEN</Text>
-              </Text>
-            </View>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
-            {/* Title */}
-            <Text style={styles.title}>Registro</Text>
+      {/* Hero Header with Gradient */}
+      <LinearGradient
+        colors={theme.gradient as any}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.heroHeader}
+      >
+        <SafeAreaView edges={['top']}>
+          <View style={styles.heroContent}>
+            <View style={styles.logoCircle}>
+              <Ionicons name="person-add" size={40} color="#FFFFFF" />
+            </View>
+            <Text style={styles.heroTitle}>Crear Cuenta</Text>
+            <Text style={styles.heroSubtitle}>Únete a BookHaven</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.formContainer}>
 
             {/* Username Input */}
-            <TextInput
-              style={styles.input}
-              placeholder="Nombre de usuario"
-              placeholderTextColor="#B8860B"
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-            />
+            <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
+              <Ionicons name="person-outline" size={20} color={theme.icon} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                placeholder="Nombre de usuario"
+                placeholderTextColor={theme.textMuted}
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+              />
+            </View>
 
             {/* Email Input */}
-            <TextInput
-              style={styles.input}
-              placeholder="Correo electrónico"
-              placeholderTextColor="#B8860B"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+            <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
+              <Ionicons name="mail-outline" size={20} color={theme.icon} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                placeholder="Correo electrónico"
+                placeholderTextColor={theme.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
             {/* Password Input */}
-            <TextInput
-              style={styles.input}
-              placeholder="Contraseña"
-              placeholderTextColor="#B8860B"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={theme.icon} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.input, { color: theme.text }]}
+                placeholder="Contraseña"
+                placeholderTextColor={theme.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
 
             {/* Birth Date Input */}
             <TouchableOpacity
-              style={styles.input}
+              style={[styles.inputContainer, { backgroundColor: theme.card }]}
               onPress={() => setShowDatePicker(true)}
             >
-              <Text style={styles.dateText}>
+              <Ionicons name="calendar-outline" size={20} color={theme.icon} style={styles.inputIcon} />
+              <Text style={[styles.dateText, { color: theme.text }]}>
                 {formatDate(birthDate)}
               </Text>
             </TouchableOpacity>
@@ -192,7 +225,7 @@ export default function RegistroScreen() {
               <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
                   <Text style={styles.modalTitle}>Seleccionar Fecha de Nacimiento</Text>
-                  
+
                   <View style={styles.datePickerContainer}>
                     {/* Day Picker */}
                     <View style={styles.pickerWrapper}>
@@ -249,215 +282,206 @@ export default function RegistroScreen() {
               </View>
             </Modal>
             {/* Genre Selection */}
-            <Text style={styles.genreTitle}>Selecciona tus géneros favoritos:</Text>
-            
-            <ScrollView style={styles.genreScrollView} showsVerticalScrollIndicator={true}>
+            <View style={styles.genreSection}>
+              <Text style={[styles.genreTitle, { color: theme.text }]}>
+                <Ionicons name="heart-outline" size={18} color={theme.tint} /> Géneros favoritos
+              </Text>
               <View style={styles.genreContainer}>
                 {genres.map((genre, index) => (
                   <TouchableOpacity
                     key={index}
                     style={[
                       styles.genreButton,
-                      selectedGenres.includes(genre) && styles.genreButtonSelected
+                      { backgroundColor: theme.card, borderColor: theme.border },
+                      selectedGenres.includes(genre) && {
+                        backgroundColor: theme.tint,
+                        borderColor: theme.tint
+                      }
                     ]}
                     onPress={() => handleGenreToggle(genre)}
                   >
-                    <View style={styles.checkbox}>
-                      {selectedGenres.includes(genre) && (
-                        <Text style={styles.checkmark}>✓</Text>
-                      )}
-                    </View>
+                    <Ionicons
+                      name={selectedGenres.includes(genre) ? "checkmark-circle" : "ellipse-outline"}
+                      size={16}
+                      color={selectedGenres.includes(genre) ? "#FFFFFF" : theme.icon}
+                    />
                     <Text style={[
                       styles.genreText,
-                      selectedGenres.includes(genre) && styles.genreTextSelected
+                      { color: theme.text },
+                      selectedGenres.includes(genre) && { color: '#FFFFFF', fontWeight: 'bold' }
                     ]}>
                       {genre}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
-            </ScrollView>
+            </View>
 
             {/* Register Button */}
-            <TouchableOpacity 
-              style={[styles.registerButton, loading && styles.registerButtonDisabled]} 
+            <TouchableOpacity
+              style={[styles.registerButton, { backgroundColor: theme.tint }, loading && styles.registerButtonDisabled]}
               onPress={handleRegister}
               disabled={loading}
             >
+              <Ionicons name="person-add" size={20} color="#FFFFFF" />
               <Text style={styles.registerButtonText}>
-                {loading ? 'Registrando...' : 'Registrarse'}
+                {loading ? 'Registrando...' : 'Crear Cuenta'}
               </Text>
             </TouchableOpacity>
 
             {/* Login Link */}
             <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>¿Ya tienes una cuenta? </Text>
+              <Text style={[styles.loginText, { color: theme.textSecondary }]}>
+                ¿Ya tienes una cuenta?{' '}
+              </Text>
               <TouchableOpacity onPress={handleLogin}>
-                <Text style={styles.loginLink}>Inicia sesión</Text>
+                <Text style={[styles.loginLink, { color: theme.tint }]}>Inicia sesión</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-
-    </SafeAreaView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5DC', // Light beige background
   },
-  scrollContent: {
-    flexGrow: 1,
+  heroHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
-  content: {
-    flex: 1,
+  heroContent: {
+    alignItems: 'center',
+    paddingTop: 20,
+    gap: 12,
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 8,
+  },
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  heroSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: 20,
-    minHeight: '100%',
   },
-  registerCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#D2691E',
-    padding: 30,
-    width: '100%',
-    maxWidth: 350,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+  formContainer: {
+    gap: 16,
   },
-  logoContainer: {
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    backgroundColor: '#F0F0F0',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 15,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 56,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  bookIcon: {
-    marginRight: 10,
-  },
-  bookText: {
-    fontSize: 24,
-  },
-  brandText: {
-    textAlign: 'center',
-  },
-  havenText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#8B4513',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#8B4513',
-    marginBottom: 20,
-    textAlign: 'center',
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    width: '100%',
-    height: 50,
-    backgroundColor: '#FFFACD', // Light yellow background
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 15,
+    flex: 1,
     fontSize: 16,
-    color: '#8B4513',
-    borderWidth: 1,
-    borderColor: '#DDD',
+    fontWeight: '500',
+  },
+  dateText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  genreSection: {
+    marginTop: 8,
+    gap: 16,
   },
   genreTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#8B4513',
-    marginBottom: 15,
-    textAlign: 'left',
-    width: '100%',
-  },
-  genreScrollView: {
-    width: '100%',
-    maxHeight: 150,
-    marginBottom: 20,
   },
   genreContainer: {
-    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    gap: 10,
   },
   genreButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '48%',
-    marginBottom: 8,
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#FFFACD',
-    borderWidth: 1,
-    borderColor: '#DDD',
-  },
-  genreButtonSelected: {
-    backgroundColor: '#F0F8E8',
-    borderColor: '#8B4513',
-  },
-  checkbox: {
-    width: 16,
-    height: 16,
-    borderWidth: 1,
-    borderColor: '#8B4513',
-    borderRadius: 3,
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  checkmark: {
-    color: '#8B4513',
-    fontSize: 12,
-    fontWeight: 'bold',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 2,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   genreText: {
-    fontSize: 12,
-    color: '#8B4513',
-    flex: 1,
-  },
-  genreTextSelected: {
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
   },
   registerButton: {
-    width: '100%',
-    height: 50,
-    backgroundColor: '#CD5C5C', // Coral red color
-    borderRadius: 10,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+    justifyContent: 'center',
+    height: 56,
+    borderRadius: 16,
+    marginTop: 24,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   registerButtonDisabled: {
-    backgroundColor: '#999',
+    opacity: 0.5,
   },
   registerButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  dateText: {
-    fontSize: 16,
-    color: '#8B4513',
-    paddingVertical: 15,
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  loginText: {
+    fontSize: 14,
+  },
+  loginLink: {
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   modalOverlay: {
     flex: 1,
@@ -525,18 +549,5 @@ const styles = StyleSheet.create({
   },
   modalButtonConfirmText: {
     color: '#FFFFFF',
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  loginText: {
-    color: '#8B4513',
-    fontSize: 14,
-  },
-  loginLink: {
-    color: '#CD5C5C',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
 });
