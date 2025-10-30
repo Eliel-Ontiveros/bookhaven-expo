@@ -6,13 +6,19 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  StatusBar,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/lib/api/service';
 import { BookList } from '@/lib/api/types';
 import CreateListModal from '@/components/CreateListModal';
 import BookListModal from '@/components/BookListModal';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
   const [selectedList, setSelectedList] = useState('');
@@ -22,6 +28,9 @@ export default function ProfileScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBookListModal, setShowBookListModal] = useState(false);
   const [selectedListData, setSelectedListData] = useState<{ id: number; name: string } | null>(null);
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     loadBookLists();
@@ -68,9 +77,9 @@ export default function ProfileScreen() {
 
   if (loading || !user) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={[styles.content, { justifyContent: 'center', alignItems: 'center' }]}>
-          <Text style={{ color: '#8B4513', fontSize: 16 }}>
+          <Text style={{ color: theme.textSecondary, fontSize: 16 }}>
             {loading ? 'Cargando perfil...' : 'No hay usuario autenticado'}
           </Text>
         </View>
@@ -79,119 +88,149 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Main Content */}
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        {/* Profile Section */}
-        <View style={styles.profileSection}>
-          {/* Profile Avatar */}
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <View style={styles.avatarIcon}>
-                <Text style={styles.avatarText}>👤</Text>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+
+      {/* Hero Header with Gradient */}
+      <LinearGradient
+        colors={theme.gradient as any}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.heroHeader, { paddingTop: insets.top + 20 }]}
+      >
+        <View style={styles.heroContent}>
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={48} color="#FFFFFF" />
               </View>
             </View>
-          </View>
-
-          {/* Profile Info */}
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>
-              {user?.username || 'Usuario'}
-            </Text>
-            <Text style={styles.profileAge}>
-              {user?.birthdate ?
-                `Edad: ${new Date().getFullYear() - new Date(user.birthdate).getFullYear()} años` :
-                'Edad: No disponible'
+            <Text style={styles.userName}>{user?.username || 'Usuario'}</Text>
+            <Text style={styles.userAge}>
+              {user?.birthdate
+                ? `${new Date().getFullYear() - new Date(user.birthdate).getFullYear()} años`
+                : 'Edad no disponible'
               }
             </Text>
           </View>
+        </View>
+      </LinearGradient>
 
-          {/* Logout Button */}
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={() => {
-              Alert.alert(
-                'Cerrar sesión',
-                '¿Estás seguro de que quieres cerrar sesión?',
-                [
-                  { text: 'Cancelar', style: 'cancel' },
-                  {
-                    text: 'Cerrar sesión',
-                    style: 'destructive',
-                    onPress: logout
-                  }
-                ]
-              );
-            }}
-          >
-            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
-          </TouchableOpacity>
+      {/* Main Content */}
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+        {/* Stats Cards */}
+        <View style={styles.statsContainer}>
+          <View style={[styles.statCard, { backgroundColor: theme.card }]}>
+            <Ionicons name="book-outline" size={32} color={theme.tint} />
+            <Text style={[styles.statValue, { color: theme.text }]}>
+              {bookLists.reduce((total, list) => total + (list.entries?.length || 0), 0)}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+              Libros guardados
+            </Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: theme.card }]}>
+            <Ionicons name="list-outline" size={32} color={theme.accent} />
+            <Text style={[styles.statValue, { color: theme.text }]}>
+              {bookLists.length}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+              Listas creadas
+            </Text>
+          </View>
+        </View>
 
-          {/* Reading Lists Section */}
-          <View style={styles.listsSection}>
-            <View style={styles.listsTitleContainer}>
-              <Text style={styles.listsTitle}>Mis listas de lectura</Text>
-              <TouchableOpacity
-                style={styles.createListButton}
-                onPress={() => setShowCreateModal(true)}
-              >
-                <Text style={styles.createListButtonText}>+ Nueva Lista</Text>
-              </TouchableOpacity>
+        {/* Lists Section */}
+        <View style={styles.listsSection}>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                Mis Listas de Lectura
+              </Text>
+              <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+                Organiza tus libros favoritos
+              </Text>
             </View>
+            <TouchableOpacity
+              style={[styles.createButton, { backgroundColor: theme.tint }]}
+              onPress={() => setShowCreateModal(true)}
+            >
+              <Ionicons name="add" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
 
-            <View style={styles.pickerContainer}>
-              {bookLists.length > 0 ? (
-                <Picker
-                  selectedValue={selectedList}
-                  style={styles.picker}
-                  onValueChange={(itemValue) => handleListSelection(itemValue)}
-                  dropdownIconColor="#8B4513"
+          {bookLists.length > 0 ? (
+            <View style={styles.listsGrid}>
+              {bookLists.map((list) => (
+                <TouchableOpacity
+                  key={list.id}
+                  style={[styles.listCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+                  onPress={() => {
+                    setSelectedListData({ id: list.id, name: list.name });
+                    setShowBookListModal(true);
+                  }}
                 >
-                  <Picker.Item
-                    label="Selecciona una lista"
-                    value=""
-                    style={styles.pickerItem}
-                  />
-                  {bookLists.map((list) => (
-                    <Picker.Item
-                      key={list.id}
-                      label={`${list.name} (${list.entries?.length || 0} libros)`}
-                      value={list.id.toString()}
-                      style={styles.pickerItem}
-                    />
-                  ))}
-                </Picker>
-              ) : (
-                <Text style={styles.noListsText}>
-                  No tienes listas de libros aún. ¡Crea tu primera lista!
-                </Text>
-              )}
+                  <View style={[styles.listIconContainer, { backgroundColor: theme.backgroundTertiary }]}>
+                    <Ionicons name="folder-outline" size={28} color={theme.tint} />
+                  </View>
+                  <Text style={[styles.listName, { color: theme.text }]} numberOfLines={1}>
+                    {list.name}
+                  </Text>
+                  <Text style={[styles.listCount, { color: theme.textSecondary }]}>
+                    {list.entries?.length || 0} {list.entries?.length === 1 ? 'libro' : 'libros'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          </View>
+          ) : (
+            <View style={[styles.emptyState, { backgroundColor: theme.card }]}>
+              <Ionicons name="folder-open-outline" size={64} color={theme.icon} />
+              <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
+                No tienes listas
+              </Text>
+              <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
+                Crea tu primera lista para organizar tus libros
+              </Text>
+            </View>
+          )}
         </View>
 
-        {/* Search Section */}
-        <View style={styles.searchSection}>
-          <View style={styles.searchContainer}>
-            <Text style={styles.searchInput}>Buscar libros...</Text>
-          </View>
-        </View>
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={[styles.logoutButton, { backgroundColor: theme.error }]}
+          onPress={() => {
+            Alert.alert(
+              'Cerrar sesión',
+              '¿Estás seguro de que quieres cerrar sesión?',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Cerrar sesión',
+                  style: 'destructive',
+                  onPress: logout
+                }
+              ]
+            );
+          }}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+        </TouchableOpacity>
       </ScrollView>
 
-      {/* Create List Modal */}
+      {/* Modals */}
       <CreateListModal
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onListCreated={loadBookLists}
       />
 
-      {/* Book List Modal */}
       {selectedListData && (
         <BookListModal
           visible={showBookListModal}
           onClose={() => {
             setShowBookListModal(false);
-            setSelectedList(''); // Reset selection
+            setSelectedList('');
             setSelectedListData(null);
           }}
           listId={selectedListData.id}
@@ -205,169 +244,170 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5DC', // Light beige background
+  },
+  heroHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  heroContent: {
+    alignItems: 'center',
+  },
+  profileHeader: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  avatarContainer: {
+    marginBottom: 8,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 4,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  userName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  userAge: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
   },
   content: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
-    minHeight: '100%',
+    gap: 24,
   },
-  profileSection: {
-    alignItems: 'center',
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statCard: {
     flex: 1,
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  avatarContainer: {
-    marginBottom: 30,
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 3,
-    borderColor: '#8B4513',
-    justifyContent: 'center',
+    padding: 20,
+    borderRadius: 16,
     alignItems: 'center',
+    gap: 8,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  avatarIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 40,
-    color: '#FFFFFF',
-  },
-  profileInfo: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  profileName: {
-    fontSize: 24,
+  statValue: {
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#8B4513',
-    marginBottom: 8,
-    textAlign: 'center',
   },
-  profileAge: {
-    fontSize: 16,
-    color: '#8B4513',
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     textAlign: 'center',
   },
   listsSection: {
-    width: '100%',
-    maxWidth: 350,
-    alignItems: 'center',
-    marginBottom: 40,
+    gap: 20,
   },
-  listsTitle: {
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  createButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  listsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  listCard: {
+    width: '48%',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 2,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  listIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  listCount: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  emptyState: {
+    padding: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyStateTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#4682B4', // Steel blue color
-    flex: 1,
+    marginTop: 12,
   },
-  pickerContainer: {
-    width: '100%',
-    backgroundColor: '#FFFACD', // Light yellow background
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    overflow: 'hidden',
-  },
-  picker: {
-    height: 50,
-    color: '#8B4513',
-  },
-  pickerItem: {
-    fontSize: 16,
-    color: '#8B4513',
-  },
-  searchSection: {
-    width: '100%',
-    maxWidth: 350,
-    alignSelf: 'center',
-  },
-  searchContainer: {
-    backgroundColor: '#FFFACD', // Light yellow background
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-  },
-  searchInput: {
-    fontSize: 16,
-    color: '#8B4513',
+  emptyStateText: {
+    fontSize: 14,
     textAlign: 'center',
-  },
-  noListsText: {
-    fontSize: 16,
-    color: '#8B4513',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    padding: 20,
   },
   logoutButton: {
-    backgroundColor: '#CD5C5C',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    marginTop: 20,
-    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 16,
+    gap: 8,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: 20,
   },
   logoutButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  listsTitleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-    width: '100%',
-  },
-  createListButton: {
-    backgroundColor: '#4682B4',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  createListButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
 });

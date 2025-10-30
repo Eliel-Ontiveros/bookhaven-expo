@@ -6,7 +6,10 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Dimensions,
+  StatusBar,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '@/lib/api/service';
@@ -15,6 +18,8 @@ import FilterButtons from '@/components/FilterButtons';
 import GenreDropdown from '@/components/GenreDropdown';
 import AuthorSearch from '@/components/AuthorSearch';
 import BooksList from '@/components/BooksList';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export default function RecommendationsScreen() {
   const [selectedGenre, setSelectedGenre] = useState<string>('');
@@ -28,6 +33,8 @@ export default function RecommendationsScreen() {
   const debounceTimerRef = useRef<number | null>(null);
 
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
   useEffect(() => {
@@ -342,48 +349,74 @@ export default function RecommendationsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={[styles.content, { paddingHorizontal: screenWidth * 0.05 }]}>
-        {/* Title */}
-        <Text style={[styles.title, { fontSize: screenWidth > 600 ? 32 : 28 }]}>Recomendaciones</Text>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
-        {/* Filter Buttons */}
-        <View style={[styles.filterContainer, {
-          flexDirection: screenWidth > 600 ? 'row' : 'row',
-          maxWidth: screenWidth > 600 ? screenWidth * 0.6 : '100%',
-          alignSelf: 'center'
-        }]}>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filterBy === 'genre' && styles.filterButtonActive
-            ]}
-            onPress={() => handleFilterChange('genre')}
-          >
-            <Text style={[
-              styles.filterButtonText,
-              filterBy === 'genre' && styles.filterButtonTextActive
-            ]}>
-              Por Género
-            </Text>
-          </TouchableOpacity>
+      {/* Hero Header with Gradient */}
+      <LinearGradient
+        colors={theme.gradient as any}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.heroHeader, { paddingTop: insets.top + 20 }]}
+      >
+        <View style={styles.heroContent}>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.heroTitle}>Recomendaciones</Text>
+              <Text style={styles.heroSubtitle}>Encuentra libros para ti</Text>
+            </View>
+            <View style={styles.logoCircle}>
+              <Ionicons name="sparkles" size={28} color="#FFFFFF" />
+            </View>
+          </View>
 
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filterBy === 'author' && styles.filterButtonActive
-            ]}
-            onPress={() => handleFilterChange('author')}
-          >
-            <Text style={[
-              styles.filterButtonText,
-              filterBy === 'author' && styles.filterButtonTextActive
-            ]}>
-              Por Autor
-            </Text>
-          </TouchableOpacity>
+          {/* Filter Buttons */}
+          <View style={styles.filterContainer}>
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                filterBy === 'genre' && [styles.filterButtonActive, { backgroundColor: theme.accent }]
+              ]}
+              onPress={() => handleFilterChange('genre')}
+            >
+              <Ionicons
+                name="albums-outline"
+                size={20}
+                color={filterBy === 'genre' ? '#FFFFFF' : theme.textMuted}
+              />
+              <Text style={[
+                styles.filterButtonText,
+                { color: filterBy === 'genre' ? '#FFFFFF' : theme.text }
+              ]}>
+                Por Género
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                filterBy === 'author' && [styles.filterButtonActive, { backgroundColor: theme.accent }]
+              ]}
+              onPress={() => handleFilterChange('author')}
+            >
+              <Ionicons
+                name="person-outline"
+                size={20}
+                color={filterBy === 'author' ? '#FFFFFF' : theme.textMuted}
+              />
+              <Text style={[
+                styles.filterButtonText,
+                { color: filterBy === 'author' ? '#FFFFFF' : theme.text }
+              ]}>
+                Por Autor
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
+      </LinearGradient>
 
+      {/* Main Content */}
+      <View style={styles.content}>
         {/* Filtros */}
         {filterBy === 'genre' && (
           <GenreDropdown
@@ -429,75 +462,81 @@ export default function RecommendationsScreen() {
           }
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5DC',
   },
-  content: {
-    flex: 1,
-    paddingTop: 10,
+  heroHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
-  title: {
+  heroContent: {
+    gap: 20,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  heroTitle: {
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#4682B4',
-    textAlign: 'center',
-    marginBottom: 25,
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    color: '#FFFFFF',
+  },
+  heroSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  logoCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filterContainer: {
-    marginBottom: 25,
-    borderRadius: 12,
+    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 4,
+    gap: 4,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  filterButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  filterButtonActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  filterButton: {
-    flex: 1,
-    paddingVertical: Dimensions.get('window').width > 600 ? 18 : 15,
-    paddingHorizontal: Dimensions.get('window').width > 600 ? 25 : 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    margin: 2,
-  },
-  filterButtonActive: {
-    backgroundColor: '#4682B4',
-    shadowColor: '#4682B4',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
   filterButtonText: {
-    fontSize: Dimensions.get('window').width > 600 ? 18 : 16,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#666666',
   },
-  filterButtonTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  selectedGenreTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4682B4',
-    marginBottom: 15,
-    textAlign: 'center',
+  content: {
+    flex: 1,
   },
 });

@@ -46,7 +46,7 @@ export default function GenreDropdown({ selectedGenre, onGenreChange, visible }:
                     selectedValue={selectedGenre}
                     onValueChange={onGenreChange}
                     style={styles.picker}
-                    dropdownIconColor="#8B4513"
+                    dropdownIconColor="#000000"
                 >
                     {genres.map((genre) => (
                         <Picker.Item
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     pickerContainer: {
-        backgroundColor: '#FFFACD',
+        backgroundColor: '#FFFFFF',
         borderRadius: 10,
         borderWidth: 1,
         borderColor: '#DDD',
@@ -75,10 +75,10 @@ const styles = StyleSheet.create({
     },
     picker: {
         height: 50,
-        color: '#8B4513',
+        color: '#000000',
     },
     pickerItem: {
         fontSize: 16,
-        color: '#8B4513',
+        color: '#000000',
     },
 });

@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  StatusBar,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +17,8 @@ import AddToListModal from '@/components/AddToListModal';
 import CommentsModal from '@/components/CommentsModal';
 import StarRating from '@/components/StarRating';
 import { Book } from '@/lib/api/types';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 interface BookDetailProps {
   route?: {
@@ -39,6 +43,8 @@ export default function BookDetailScreen() {
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
 
   // Parse book data from params
   let book;
@@ -67,72 +73,85 @@ export default function BookDetailScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+
+      {/* Hero Header with Gradient */}
+      <LinearGradient
+        colors={theme.gradient as any}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.heroHeader, { paddingTop: insets.top + 20 }]}
+      >
+        <View style={styles.heroContent}>
+          <View style={styles.headerTop}>
+            <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.heroTitle} numberOfLines={1}>
+              {book.title}
+            </Text>
+            <View style={styles.headerRight} />
+          </View>
+        </View>
+      </LinearGradient>
+
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Header with back button integrated in content */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <Ionicons name="arrow-back" size={24} color="#4682B4" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Detalles del Libro</Text>
-          <View style={styles.headerRight} />
-        </View>
-
-        {/* Book Title */}
-        <Text style={styles.title}>{book.title}</Text>
-
-        <View style={[styles.bookContainer, { flexDirection: screenWidth > 600 ? 'row' : 'column' }]}>
-          {/* Book Cover */}
-          <View style={[styles.bookCover, {
-            width: screenWidth > 600 ? screenWidth * 0.25 : screenWidth * 0.4,
-            height: screenWidth > 600 ? screenWidth * 0.35 : screenWidth * 0.6,
-            alignSelf: screenWidth > 600 ? 'flex-start' : 'center'
-          }]}>
+        {/* Book Cover and Info Card */}
+        <View style={[styles.bookCard, { backgroundColor: theme.card }]}>
+          <View style={styles.bookCover}>
             {book.image ? (
               <Image source={{ uri: book.image }} style={styles.coverImage} />
             ) : (
-              <View style={styles.placeholderCover}>
-                <Text style={styles.placeholderText}>📖</Text>
-                <Text style={styles.placeholderTitle}>{book.title}</Text>
+              <View style={[styles.placeholderCover, { backgroundColor: theme.backgroundTertiary }]}>
+                <Ionicons name="book" size={64} color={theme.icon} />
               </View>
             )}
           </View>
 
-          {/* Book Info */}
-          <View style={[styles.bookInfo, {
-            flex: screenWidth > 600 ? 1 : undefined,
-            paddingLeft: screenWidth > 600 ? 20 : 0,
-            paddingTop: screenWidth > 600 ? 0 : 20
-          }]}>
-            <Text style={styles.infoLabel}>Autores:</Text>
-            <Text style={styles.authorText}>{book.authors}</Text>
-
-            <Text style={styles.infoLabel}>Géneros:</Text>
-            <Text style={styles.genreText}>
-              {Array.isArray(book.categories) && book.categories.length > 0
-                ? book.categories.join(', ')
-                : 'Género no especificado'}
+          <View style={styles.bookInfo}>
+            <Text style={[styles.bookTitle, { color: theme.text }]} numberOfLines={2}>
+              {book.title}
             </Text>
 
-            <Text style={styles.infoLabel}>Calificación:</Text>
-            <StarRating
-              bookId={book.id}
-              size="medium"
-              onRatingChange={(rating) => {
-                console.log('User rated book:', rating);
-              }}
-            />
+            <View style={styles.infoRow}>
+              <Ionicons name="person-outline" size={18} color={theme.icon} />
+              <Text style={[styles.authorText, { color: theme.textSecondary }]}>
+                {book.authors}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Ionicons name="pricetag-outline" size={18} color={theme.icon} />
+              <Text style={[styles.genreText, { color: theme.textSecondary }]}>
+                {Array.isArray(book.categories) && book.categories.length > 0
+                  ? book.categories.join(', ')
+                  : 'Género no especificado'}
+              </Text>
+            </View>
+
+            <View style={styles.ratingContainer}>
+              <StarRating
+                bookId={book.id}
+                size="medium"
+                onRatingChange={(rating) => {
+                  console.log('User rated book:', rating);
+                }}
+              />
+            </View>
           </View>
         </View>
 
         {/* Description */}
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.descriptionTitle}>Sinopsis:</Text>
-          <Text style={styles.descriptionText}>
+        <View style={[styles.descriptionContainer, { backgroundColor: theme.card }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
+            📖 Sinopsis
+          </Text>
+          <Text style={[styles.descriptionText, { color: theme.textSecondary }]}>
             {book.description || 'No hay descripción disponible para este libro.'}
           </Text>
         </View>
@@ -140,22 +159,24 @@ export default function BookDetailScreen() {
         {/* Action Buttons */}
         <View style={styles.buttonsContainer}>
           <TouchableOpacity
-            style={[styles.actionButton, { width: screenWidth > 600 ? screenWidth * 0.4 : '100%' }]}
+            style={[styles.actionButton, { backgroundColor: theme.tint }]}
             onPress={() => setShowAddToListModal(true)}
           >
-            <Text style={styles.buttonText}>📚 Agregar a Lista</Text>
+            <Ionicons name="bookmark-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.buttonText}>Agregar a Lista</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { width: screenWidth > 600 ? screenWidth * 0.4 : '100%' }]}
+            style={[styles.actionButton, { backgroundColor: theme.accent }]}
             onPress={() => setShowCommentsModal(true)}
           >
-            <Text style={styles.buttonText}>💬 Ver Comentarios</Text>
+            <Ionicons name="chatbubbles-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.buttonText}>Ver Comentarios</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Add to List Modal */}
+      {/* Modals */}
       <AddToListModal
         visible={showAddToListModal}
         onClose={() => setShowAddToListModal(false)}
@@ -165,7 +186,6 @@ export default function BookDetailScreen() {
         }}
       />
 
-      {/* Comments Modal */}
       <CommentsModal
         visible={showCommentsModal}
         onClose={() => setShowCommentsModal(false)}
@@ -179,62 +199,65 @@ export default function BookDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5DC',
   },
-  headerContainer: {
+  heroHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  heroContent: {
+    gap: 12,
+  },
+  headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    marginBottom: 10,
   },
   backButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    backgroundColor: '#F0F8FF',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 20,
+  heroTitle: {
+    flex: 1,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#4682B4',
+    color: '#FFFFFF',
     textAlign: 'center',
+    marginHorizontal: 12,
   },
   headerRight: {
-    width: 34, // Same width as back button for centering
+    width: 40,
   },
   content: {
     flex: 1,
-    color: '#333',
-    paddingHorizontal: 20,
-    paddingTop: 30,
+    padding: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#8B4513',
-    textAlign: 'center',
+  bookCard: {
+    borderRadius: 20,
+    padding: 20,
     marginBottom: 20,
-    lineHeight: 30,
-  },
-  bookContainer: {
-    flexDirection: 'row',
-    marginBottom: 30,
-    gap: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   bookCover: {
-    width: 120,
-    height: 180,
-    borderRadius: 10,
+    width: '100%',
+    height: 300,
+    borderRadius: 16,
     overflow: 'hidden',
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowRadius: 12,
+    elevation: 8,
   },
   coverImage: {
     width: '100%',
@@ -244,90 +267,69 @@ const styles = StyleSheet.create({
   placeholderCover: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#D2B48C',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 10,
-    borderWidth: 2,
-    borderColor: '#8B4513',
-  },
-  placeholderText: {
-    fontSize: 40,
-    marginBottom: 10,
-  },
-  placeholderTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#8B4513',
-    textAlign: 'center',
-    lineHeight: 14,
   },
   bookInfo: {
-    flex: 1,
-    paddingLeft: 10,
+    gap: 16,
   },
-  infoLabel: {
-    fontSize: 14,
+  bookTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#8B4513',
-    marginTop: 10,
-    marginBottom: 5,
+    lineHeight: 32,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   authorText: {
     fontSize: 16,
-    color: '#4682B4',
     fontWeight: '600',
-    marginBottom: 5,
+    flex: 1,
   },
   genreText: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
+    flex: 1,
+  },
+  ratingContainer: {
+    marginTop: 8,
   },
   descriptionContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 20,
     padding: 20,
-    marginBottom: 30,
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
-  descriptionTitle: {
-    fontSize: 18,
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#8B4513',
-    marginBottom: 15,
+    marginBottom: 16,
   },
   descriptionText: {
-    fontSize: 14,
-    color: '#333',
-    lineHeight: 22,
-    textAlign: 'justify',
+    fontSize: 15,
+    lineHeight: 24,
   },
   buttonsContainer: {
-    gap: 15,
-    marginBottom: 30,
+    gap: 12,
   },
   actionButton: {
-    backgroundColor: '#4682B4',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    gap: 8,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
     color: '#FFFFFF',

@@ -9,7 +9,9 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  StatusBar,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +19,7 @@ import { apiService } from '@/lib/api/service';
 import { Book } from '@/lib/api/types';
 import BookCard from '@/components/BookCard';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,7 +31,7 @@ export default function ExploreScreen() {
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const theme = Colors[colorScheme ?? 'light'];
   const { width: screenWidth } = Dimensions.get('window');
 
   const categories = [
@@ -103,7 +106,7 @@ export default function ExploreScreen() {
         if (resetResults) {
           setBooks(response.data);
           setPage(2);
-          
+
           // Agregar a historial de búsqueda si hay query
           if (query.trim() && !searchHistory.includes(query.trim())) {
             setSearchHistory(prev => [query.trim(), ...prev.slice(0, 4)]); // Mantener solo 5 elementos
@@ -112,7 +115,7 @@ export default function ExploreScreen() {
           setBooks(prev => [...prev, ...response.data!]);
           setPage(prev => prev + 1);
         }
-        
+
         setHasMore(response.data.length === 20);
       } else {
         Alert.alert('Error', response.error || 'No se pudieron cargar los libros');
@@ -150,44 +153,43 @@ export default function ExploreScreen() {
     }
   };
 
-  const renderCategory = ({ item }: { item: string }) => (
-    <TouchableOpacity
-      style={[
-        styles.categoryButton,
-        {
-          backgroundColor: (selectedCategory === item || (item === 'Todos' && !selectedCategory))
-            ? (isDark ? '#007AFF' : '#007AFF')
-            : (isDark ? '#2C2C2E' : '#F2F2F7'),
-          borderColor: isDark ? '#38383A' : '#C6C6C8',
-        }
-      ]}
-      onPress={() => handleCategorySelect(item)}
-    >
-      <Text
+  const renderCategory = ({ item }: { item: string }) => {
+    const isSelected = selectedCategory === item || (item === 'Todos' && !selectedCategory);
+    return (
+      <TouchableOpacity
         style={[
-          styles.categoryText,
+          styles.categoryButton,
           {
-            color: (selectedCategory === item || (item === 'Todos' && !selectedCategory))
-              ? '#FFFFFF'
-              : (isDark ? '#FFFFFF' : '#000000'),
+            backgroundColor: isSelected ? theme.tint : theme.card,
+            borderColor: theme.border,
           }
         ]}
+        onPress={() => handleCategorySelect(item)}
       >
-        {item}
-      </Text>
-    </TouchableOpacity>
-  );
+        <Text
+          style={[
+            styles.categoryText,
+            {
+              color: isSelected ? '#FFFFFF' : theme.text,
+            }
+          ]}
+        >
+          {item}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   const renderHistoryItem = ({ item }: { item: string }) => (
     <TouchableOpacity
-      style={[styles.historyItem, { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' }]}
+      style={[styles.historyItem, { backgroundColor: theme.card }]}
       onPress={() => {
         setSearchQuery(item);
         searchBooks(item, true);
       }}
     >
-      <Ionicons name="time-outline" size={16} color={isDark ? '#8E8E93' : '#6D6D70'} />
-      <Text style={[styles.historyText, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+      <Ionicons name="time-outline" size={16} color={theme.icon} />
+      <Text style={[styles.historyText, { color: theme.text }]}>
         {item}
       </Text>
     </TouchableOpacity>
@@ -201,48 +203,52 @@ export default function ExploreScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#000000' : '#FFFFFF', paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: isDark ? '#2C2C2E' : '#E5E5EA' }]}>
-        <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#000000' }]}>
-          Explorar Libros
-        </Text>
-      </View>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
-      {/* Search Bar */}
-      <View style={[styles.searchContainer, { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' }]}>
-        <View style={[styles.searchBar, { 
-          backgroundColor: isDark ? '#2C2C2E' : '#FFFFFF',
-          borderColor: isDark ? '#38383A' : '#C6C6C8'
-        }]}>
-          <Ionicons name="search" size={20} color={isDark ? '#8E8E93' : '#6D6D70'} />
-          <TextInput
-            style={[styles.searchInput, { color: isDark ? '#FFFFFF' : '#000000' }]}
-            placeholder="Buscar libros..."
-            placeholderTextColor={isDark ? '#8E8E93' : '#6D6D70'}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSubmitEditing={handleSearch}
-            returnKeyType="search"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={isDark ? '#8E8E93' : '#6D6D70'} />
-            </TouchableOpacity>
-          )}
+      {/* Hero Header with Gradient */}
+      <LinearGradient
+        colors={theme.gradient as any}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.heroHeader, { paddingTop: insets.top + 20 }]}
+      >
+        <View style={styles.heroContent}>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.heroTitle}>Explorar</Text>
+              <Text style={styles.heroSubtitle}>Descubre nuevos libros</Text>
+            </View>
+            <View style={styles.logoCircle}>
+              <Ionicons name="compass" size={28} color="#FFFFFF" />
+            </View>
+          </View>
+
+          {/* Modern Search Bar */}
+          <View style={styles.modernSearchContainer}>
+            <Ionicons name="search" size={20} color="#666666" style={styles.searchIcon} />
+            <TextInput
+              style={[styles.modernSearchInput, { color: '#000000' }]}
+              placeholder="Buscar libros..."
+              placeholderTextColor="#999999"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearch}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearIconButton}>
+                <Ionicons name="close-circle" size={20} color="#666666" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-        <TouchableOpacity
-          style={[styles.searchButton, { backgroundColor: isDark ? '#007AFF' : '#007AFF' }]}
-          onPress={handleSearch}
-        >
-          <Ionicons name="search" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       {/* Search History */}
       {searchHistory.length > 0 && searchQuery.length === 0 && (
         <View style={styles.historyContainer}>
-          <Text style={[styles.sectionTitle, { color: isDark ? '#8E8E93' : '#6D6D70' }]}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
             Búsquedas recientes
           </Text>
           <FlatList
@@ -258,7 +264,7 @@ export default function ExploreScreen() {
 
       {/* Categories */}
       <View style={styles.categoriesContainer}>
-        <Text style={[styles.sectionTitle, { color: isDark ? '#8E8E93' : '#6D6D70' }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
           Categorías
         </Text>
         <FlatList
@@ -283,18 +289,18 @@ export default function ExploreScreen() {
         ListFooterComponent={
           loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={isDark ? '#007AFF' : '#007AFF'} />
+              <ActivityIndicator size="large" color={theme.tint} />
             </View>
           ) : null
         }
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="search-outline" size={64} color={isDark ? '#8E8E93' : '#6D6D70'} />
-              <Text style={[styles.emptyText, { color: isDark ? '#8E8E93' : '#6D6D70' }]}>
+              <Ionicons name="search-outline" size={64} color={theme.icon} />
+              <Text style={[styles.emptyText, { color: theme.text }]}>
                 No se encontraron libros
               </Text>
-              <Text style={[styles.emptySubtext, { color: isDark ? '#8E8E93' : '#6D6D70' }]}>
+              <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>
                 Intenta con otros términos de búsqueda
               </Text>
             </View>
@@ -309,52 +315,74 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
+  heroHeader: {
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
-  title: {
-    fontSize: 24,
+  heroContent: {
+    gap: 20,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  heroTitle: {
+    fontSize: 28,
     fontWeight: 'bold',
+    color: '#FFFFFF',
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
+  heroSubtitle: {
     fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+    marginTop: 4,
   },
-  searchButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  logoCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  historyContainer: {
+  modernSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     paddingHorizontal: 16,
+    height: 56,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  searchIcon: {
+    marginRight: 12,
+  },
+  modernSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  clearIconButton: {
+    padding: 4,
+  },
+  historyContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 16,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 12,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   historyList: {
     gap: 8,
@@ -362,33 +390,44 @@ const styles = StyleSheet.create({
   historyItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
-    gap: 6,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   historyText: {
     fontSize: 14,
+    fontWeight: '500',
   },
   categoriesContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 16,
   },
   categoriesList: {
-    gap: 8,
+    gap: 10,
   },
   categoryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   categoryText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   booksContainer: {
-    padding: 16,
+    padding: 20,
     gap: 16,
   },
   loadingContainer: {
@@ -404,7 +443,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
     textAlign: 'center',
     marginTop: 16,
     marginBottom: 8,

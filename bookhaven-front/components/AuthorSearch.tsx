@@ -47,7 +47,7 @@ export default function AuthorSearch({
                     value={authorQuery}
                     onChangeText={onAuthorChange}
                     placeholder={placeholder}
-                    placeholderTextColor="#999"
+                    placeholderTextColor="#999999"
                     autoCapitalize="words"
                     autoComplete="name"
                 />
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#8B4513',
+        color: '#000000',
     },
     clearButton: {
         paddingHorizontal: 12,
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     inputContainer: {
-        backgroundColor: '#FFFACD',
+        backgroundColor: '#FFFFFF',
         borderRadius: 10,
         borderWidth: 1,
         borderColor: '#DDD',
@@ -120,14 +120,14 @@ const styles = StyleSheet.create({
         height: 50,
         paddingHorizontal: 15,
         fontSize: 16,
-        color: '#8B4513',
+        color: '#000000',
     },
     suggestionsContainer: {
         marginTop: 12,
     },
     suggestionsLabel: {
         fontSize: 14,
-        color: '#666',
+        color: '#000000',
         marginBottom: 8,
         fontWeight: '500',
     },
