@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AddToListModal from '@/components/AddToListModal';
 import CommentsModal from '@/components/CommentsModal';
+import ChatbotModal from '@/components/ChatbotModal';
 import StarRating from '@/components/StarRating';
 import { Book } from '@/lib/api/types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -40,6 +41,7 @@ interface BookDetailProps {
 export default function BookDetailScreen() {
   const [showAddToListModal, setShowAddToListModal] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [showChatbotModal, setShowChatbotModal] = useState(false);
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -173,6 +175,14 @@ export default function BookDetailScreen() {
             <Ionicons name="chatbubbles-outline" size={20} color="#FFFFFF" />
             <Text style={styles.buttonText}>Ver Comentarios</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#8B5CF6' }]}
+            onPress={() => setShowChatbotModal(true)}
+          >
+            <Ionicons name="sparkles" size={20} color="#FFFFFF" />
+            <Text style={styles.buttonText}>Asistente IA</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -191,6 +201,12 @@ export default function BookDetailScreen() {
         onClose={() => setShowCommentsModal(false)}
         bookId={book.id}
         bookTitle={book.title}
+      />
+
+      <ChatbotModal
+        visible={showChatbotModal}
+        onClose={() => setShowChatbotModal(false)}
+        book={book as Book}
       />
     </View>
   );

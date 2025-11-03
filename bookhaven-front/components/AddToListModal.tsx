@@ -115,7 +115,16 @@ export default function AddToListModal({ visible, onClose, book, onSuccess }: Ad
 
     const renderListItem = ({ item }: { item: BookList }) => (
         <TouchableOpacity
-            style={[modalStyles.listItem, { backgroundColor: colors.surface }]}
+            style={[
+                modalStyles.listItem,
+                {
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.lightGray,
+                    marginBottom: BookHavenTheme.spacing.sm,
+                    ...BookHavenTheme.shadows.small
+                }
+            ]}
             onPress={() => addBookToList(item.id)}
         >
             <View style={styles.listInfo}>
@@ -129,7 +138,7 @@ export default function AddToListModal({ visible, onClose, book, onSuccess }: Ad
             <View style={[styles.iconButton, { backgroundColor: colors.primary }]}>
                 <Ionicons
                     name="add"
-                    size={20}
+                    size={18}
                     color={colors.white}
                 />
             </View>
@@ -159,10 +168,17 @@ export default function AddToListModal({ visible, onClose, book, onSuccess }: Ad
                 </View>
 
                 {/* Book Info */}
-                <View style={[styles.bookInfo, { borderBottomColor: colors.gray, backgroundColor: colors.surface }]}>
+                <View style={[styles.bookInfo, {
+                    borderBottomColor: colors.gray,
+                    backgroundColor: colors.lightGray,
+                    margin: BookHavenTheme.spacing.lg,
+                    borderRadius: BookHavenTheme.borderRadius.lg,
+                    borderBottomWidth: 0,
+                    ...BookHavenTheme.shadows.small
+                }]}>
                     <View style={styles.bookContainer}>
                         <View style={[styles.bookIcon, { backgroundColor: colors.primary }]}>
-                            <Ionicons name="book" size={24} color={colors.white} />
+                            <Ionicons name="book" size={22} color={colors.white} />
                         </View>
                         <View style={styles.bookDetails}>
                             <Text style={[modalStyles.body, { color: colors.text, fontWeight: '600' as const }]}>
@@ -313,8 +329,8 @@ const styles = StyleSheet.create({
         gap: BookHavenTheme.spacing.md,
     },
     bookIcon: {
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         borderRadius: BookHavenTheme.borderRadius.md,
         justifyContent: 'center' as const,
         alignItems: 'center' as const,
@@ -421,9 +437,9 @@ const styles = StyleSheet.create({
         fontSize: 12,
     },
     iconButton: {
-        width: 32,
-        height: 32,
-        borderRadius: BookHavenTheme.borderRadius.sm,
+        width: 36,
+        height: 36,
+        borderRadius: BookHavenTheme.borderRadius.md,
         justifyContent: 'center' as const,
         alignItems: 'center' as const,
         ...BookHavenTheme.shadows.small,

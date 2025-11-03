@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import BookListView from './BookListView';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getThemeColors } from '@/constants/modal-theme';
 
 interface BookListModalProps {
     visible: boolean;
@@ -22,6 +23,7 @@ export default function BookListModal({
 }: BookListModalProps) {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const colors = getThemeColors(isDark);
 
     return (
         <Modal
@@ -30,7 +32,7 @@ export default function BookListModal({
             presentationStyle="pageSheet"
             onRequestClose={onClose}
         >
-            <View style={[styles.container, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <BookListView
                     listId={listId}
                     listName={listName}

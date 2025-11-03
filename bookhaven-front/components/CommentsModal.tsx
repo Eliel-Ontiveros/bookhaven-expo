@@ -51,12 +51,12 @@ export default function CommentsModal({
                     </TouchableOpacity>
                     <View style={styles.titleContainer}>
                         <View style={[styles.commentIcon, { backgroundColor: colors.primary }]}>
-                            <Ionicons name="chatbubbles" size={20} color={colors.white} />
+                            <Ionicons name="chatbubbles" size={18} color={colors.white} />
                         </View>
                         <Text style={[modalStyles.headerTitle, { color: colors.primary }]}>
                             Comentarios
                         </Text>
-                        <Text style={[modalStyles.caption, { color: colors.textSecondary, textAlign: 'center' as const }]} numberOfLines={1}>
+                        <Text style={[modalStyles.caption, { color: colors.textSecondary, textAlign: 'center' as const }]} numberOfLines={2}>
                             {bookTitle}
                         </Text>
                     </View>
@@ -94,8 +94,8 @@ const styles = StyleSheet.create({
         gap: BookHavenTheme.spacing.xs,
     },
     commentIcon: {
-        width: 32,
-        height: 32,
+        width: 36,
+        height: 36,
         borderRadius: BookHavenTheme.borderRadius.md,
         justifyContent: 'center' as const,
         alignItems: 'center' as const,

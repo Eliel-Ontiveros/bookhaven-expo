@@ -56,6 +56,9 @@ export const API_CONFIG = {
     // Ratings
     RATINGS: '/api/ratings',
 
+    // Chatbot
+    CHATBOT: '/api/chatbot',
+
     // User/Profile
     USER_PROFILE: '/api/users/profile',
     USER_RECOMMENDATIONS: '/api/users/recommendations',

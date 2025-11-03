@@ -78,7 +78,7 @@ export default function BooksList({
               paddingBottom: 20
             }
           ]}
-          columnWrapperStyle={!horizontal && (isTablet ? 3 : 2) > 1 ? { justifyContent: 'space-between', paddingHorizontal: 8 } : undefined}
+          columnWrapperStyle={!horizontal && (isTablet ? 3 : 2) > 1 ? { justifyContent: 'space-between', paddingHorizontal: 4 } : undefined}
           ItemSeparatorComponent={() => (
             <View style={horizontal ? styles.bookSeparator : styles.bookGridSeparator} />
           )}
@@ -109,14 +109,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   booksGrid: {
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 0, // Remove horizontal padding since we're using columnWrapperStyle
   },
   bookSeparator: {
-    width: 12,
+    width: 8,
   },
   bookGridSeparator: {
-    height: 12,
+    height: 8,
   },
   loadingContainer: {
     flex: 1,

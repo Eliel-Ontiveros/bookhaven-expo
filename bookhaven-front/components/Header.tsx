@@ -4,79 +4,146 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
+import { router, usePathname } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function Header() {
-  const { logout } = useAuth();
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+  const pathname = usePathname();
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Cerrar sesión',
-      '¿Estás seguro de que quieres cerrar sesión?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Cerrar sesión',
-          style: 'destructive',
-          onPress: logout,
-        },
-      ]
-    );
+  const getNavButtonStyle = (route: string) => {
+    const isActive = pathname === route;
+    return [
+      styles.navButton,
+      isActive && styles.navButtonActive,
+      { backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent' }
+    ];
+  };
+
+  const getNavTextStyle = (route: string) => {
+    const isActive = pathname === route;
+    return [
+      styles.navText,
+      isActive && styles.navTextActive,
+      { color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.8)' }
+    ];
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        {/* Logo pequeño */}
-      <View style={styles.logoContainer}>
-        <Text style={styles.bookIcon}>📖</Text>
-        <Text style={styles.logoText}>BookHaven</Text>
-      </View>
-      
-      {/* Navegación */}
-      <View style={styles.navContainer}>
-        <TouchableOpacity 
-          style={styles.navButton}
+      <LinearGradient
+        colors={theme.gradient as any}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.header}
+      >
+        {/* Logo Principal Izquierda */}
+        <TouchableOpacity
+          style={styles.logoMainContainer}
           onPress={() => router.push('/inicio')}
         >
-          <Text style={styles.navText}>Inicio</Text>
+          <View style={styles.logoCircle}>
+            <Ionicons name="book" size={24} color="#FFFFFF" />
+          </View>
+          <Text style={styles.logoMainText}>BookHaven</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.navButton}
-          onPress={() => router.push('/recomendaciones')}
-        >
-          <Text style={styles.navText}>Recomendaciones</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.navButton}
-          onPress={() => router.push('/perfil')}
-        >
-          <Text style={styles.navText}>Perfil</Text>
-        </TouchableOpacity>
-      </View>
-      </View>
+
+        {/* Navegación */}
+        <View style={styles.navContainer}>
+          <TouchableOpacity
+            style={getNavButtonStyle('/recomendaciones')}
+            onPress={() => router.push('/recomendaciones')}
+          >
+            <Ionicons name="star" size={18} color="rgba(255, 255, 255, 0.9)" />
+            <Text style={getNavTextStyle('/recomendaciones')}>Recomendaciones</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={getNavButtonStyle('/perfil')}
+            onPress={() => router.push('/perfil')}
+          >
+            <Ionicons name="person" size={18} color="rgba(255, 255, 255, 0.9)" />
+            <Text style={getNavTextStyle('/perfil')}>Perfil</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: 'transparent',
   },
   header: {
-    backgroundColor: '#4A90E2',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+    minHeight: 60,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoMainContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  logoMainText: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 0.8,
+  },
+  navContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 22,
+    gap: 6,
+    minWidth: 80,
+    justifyContent: 'center',
+  },
+  navButtonActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -85,43 +152,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
-    minHeight: 50,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  bookIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  logoText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  navContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 15,
-  },
-  navButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
   },
   navText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
   },
-  logoutButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginLeft: 10,
-  },
-  logoutText: {
-    fontSize: 16,
+  navTextActive: {
+    fontWeight: 'bold',
   },
 });

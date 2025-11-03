@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, TextInput, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 interface AuthorSearchProps {
     authorQuery: string;
@@ -16,15 +17,8 @@ export default function AuthorSearch({
 }: AuthorSearchProps) {
     if (!visible) return null;
 
-    // Sugerencias populares de autores
-    const popularAuthors = [
-        'Stephen King', 'J.K. Rowling', 'George R.R. Martin', 'Agatha Christie',
-        'Gabriel García Márquez', 'Isabel Allende', 'Paulo Coelho', 'Dan Brown'
-    ];
-
-    const handleSuggestionPress = (author: string) => {
-        onAuthorChange(author);
-    };
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === 'dark';
 
     const clearAuthor = () => {
         onAuthorChange('');
@@ -33,7 +27,9 @@ export default function AuthorSearch({
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>
-                <Text style={styles.label}>Buscar por autor:</Text>
+                <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+                    Buscar por autor:
+                </Text>
                 {authorQuery.length > 0 && (
                     <TouchableOpacity onPress={clearAuthor} style={styles.clearButton}>
                         <Text style={styles.clearButtonText}>Limpiar</Text>
@@ -43,33 +39,15 @@ export default function AuthorSearch({
 
             <View style={styles.inputContainer}>
                 <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: '#000000' }]}
                     value={authorQuery}
                     onChangeText={onAuthorChange}
                     placeholder={placeholder}
-                    placeholderTextColor="#999999"
+                    placeholderTextColor={isDark ? '#999999' : '#666666'}
                     autoCapitalize="words"
                     autoComplete="name"
                 />
             </View>
-
-            {/* Mostrar sugerencias solo si no hay texto o hay muy poco */}
-            {authorQuery.length < 2 && (
-                <View style={styles.suggestionsContainer}>
-                    <Text style={styles.suggestionsLabel}>Autores populares:</Text>
-                    <View style={styles.suggestionsGrid}>
-                        {popularAuthors.slice(0, 4).map((author, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={styles.suggestionChip}
-                                onPress={() => handleSuggestionPress(author)}
-                            >
-                                <Text style={styles.suggestionText}>{author}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </View>
-            )}
 
             {/* Indicador de búsqueda activa */}
             {authorQuery.length >= 2 && (
@@ -96,7 +74,6 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#000000',
     },
     clearButton: {
         paddingHorizontal: 12,
@@ -120,35 +97,6 @@ const styles = StyleSheet.create({
         height: 50,
         paddingHorizontal: 15,
         fontSize: 16,
-        color: '#000000',
-    },
-    suggestionsContainer: {
-        marginTop: 12,
-    },
-    suggestionsLabel: {
-        fontSize: 14,
-        color: '#000000',
-        marginBottom: 8,
-        fontWeight: '500',
-    },
-    suggestionsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    suggestionChip: {
-        backgroundColor: '#E8F4FD',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#4682B4',
-        margin: 2,
-    },
-    suggestionText: {
-        color: '#4682B4',
-        fontSize: 12,
-        fontWeight: '500',
     },
     searchInfo: {
         marginTop: 8,

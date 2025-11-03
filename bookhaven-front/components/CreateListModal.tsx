@@ -84,11 +84,11 @@ export default function CreateListModal({ visible, onClose, onListCreated }: Cre
                     {/* Header con icono */}
                     <View style={styles.iconContainer}>
                         <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
-                            <Ionicons name="library-outline" size={32} color={colors.white} />
+                            <Ionicons name="library-outline" size={28} color={colors.white} />
                         </View>
                     </View>
 
-                    <Text style={[modalStyles.title, { color: colors.primary }]}>
+                    <Text style={[modalStyles.title, { color: colors.primary, textAlign: 'center' as const }]}>
                         Crear Nueva Lista
                     </Text>
 
@@ -171,9 +171,9 @@ const styles = StyleSheet.create({
         marginBottom: BookHavenTheme.spacing.lg,
     },
     iconCircle: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         justifyContent: 'center' as const,
         alignItems: 'center' as const,
         ...BookHavenTheme.shadows.medium,

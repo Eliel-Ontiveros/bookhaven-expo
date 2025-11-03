@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Book } from '@/lib/api/types';
@@ -13,12 +14,21 @@ import { Book } from '@/lib/api/types';
 interface SearchResultsProps {
   results: Book[];
   onBookPress: (book: Book) => void;
+  onEndReached?: () => void;
+  loading?: boolean;
+  loadingMore?: boolean;
 }
 
-export default function SearchResults({ results, onBookPress }: SearchResultsProps) {
+export default function SearchResults({
+  results,
+  onBookPress,
+  onEndReached,
+  loading = false,
+  loadingMore = false
+}: SearchResultsProps) {
   const renderBookItem = ({ item }: { item: Book }) => (
-    <TouchableOpacity 
-      style={styles.bookCard} 
+    <TouchableOpacity
+      style={styles.bookCard}
       onPress={() => {
         onBookPress(item);
         router.push({
@@ -50,6 +60,24 @@ export default function SearchResults({ results, onBookPress }: SearchResultsPro
     </TouchableOpacity>
   );
 
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color="#8B4513" />
+      </View>
+    );
+  };
+
+  if (loading && results.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#8B4513" />
+        <Text style={styles.loadingText}>Cargando recomendaciones...</Text>
+      </View>
+    );
+  }
+
   if (results.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -69,6 +97,9 @@ export default function SearchResults({ results, onBookPress }: SearchResultsPro
         contentContainerStyle={styles.listContainer}
         numColumns={2}
         columnWrapperStyle={styles.row}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={renderFooter}
       />
     </View>
   );
@@ -166,5 +197,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8B4513',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#8B4513',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
 });
