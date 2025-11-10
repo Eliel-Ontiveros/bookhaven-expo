@@ -214,44 +214,65 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
-      {/* Hero Header with Gradient */}
+      {/* Hero Header with Library-inspired Design */}
       <LinearGradient
         colors={theme.gradient as any}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.heroHeader, { paddingTop: insets.top + 20 }]}
+        style={[styles.heroHeader, { paddingTop: 20 }]}
       >
+        {/* Decorative top border */}
+        <View style={styles.decorativeBorder} />
+
         <View style={styles.heroContent}>
           <View style={styles.headerTop}>
-            <View>
+            <View style={styles.greetingSection}>
               <Text style={styles.heroGreeting}>
-                {user ? `Hola, ${user.username}` : 'Bienvenido'}
+                {user ? `📚 Bienvenido, ${user.username}` : '📖 Bienvenido a'}
               </Text>
-              <Text style={styles.heroTitle}>Descubre tu próximo libro</Text>
+              <Text style={styles.heroTitle}>
+                {user ? 'Tu Biblioteca Personal' : 'BookHaven'}
+              </Text>
+              <Text style={styles.heroSubtitle}>
+                {user ? 'Descubre nuevas historias esperándote' : 'Donde cada página es una nueva aventura'}
+              </Text>
             </View>
-            <View style={styles.logoCircle}>
-              <Ionicons name="book" size={28} color="#FFFFFF" />
+            <View style={styles.logoContainer}>
+              <View style={styles.bookIcon}>
+                <Ionicons name="library" size={32} color="#FFFFFF" />
+              </View>
+              <View style={styles.ornament}>
+                <Text style={styles.ornamentText}>✦</Text>
+              </View>
             </View>
           </View>
 
-          {/* Modern Search Bar */}
-          <View style={styles.modernSearchContainer}>
-            <Ionicons name="search" size={20} color={theme.textMuted} style={styles.searchIcon} />
-            <TextInput
-              style={[styles.modernSearchInput, { color: theme.background }]}
-              placeholder="Buscar por título o autor..."
-              placeholderTextColor={theme.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={handleSearch}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={clearSearch} style={styles.clearIconButton}>
-                <Ionicons name="close-circle" size={20} color={theme.textMuted} />
-              </TouchableOpacity>
-            )}
+          {/* Elegant Search Bar */}
+          <View style={styles.searchSection}>
+            <Text style={styles.searchLabel}>¿Qué historia buscas hoy?</Text>
+            <View style={styles.elegantSearchContainer}>
+              <View style={styles.searchBorder}>
+                <Ionicons name="search" size={20} color={(theme as any).bookSpine} style={styles.searchIcon} />
+                <TextInput
+                  style={[styles.elegantSearchInput, { color: theme.text }]}
+                  placeholder="Buscar por título, autor o género..."
+                  placeholderTextColor={theme.textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={handleSearch}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={clearSearch} style={styles.clearIconButton}>
+                    <Ionicons name="close-circle" size={20} color={theme.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
           </View>
         </View>
+
+        {/* Decorative bottom border */}
+        <View style={styles.decorativeBottomBorder} />
       </LinearGradient>
 
       {/* Main Content */}
@@ -290,6 +311,34 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.homeContent}>
+            {/* Community Access Card */}
+            <TouchableOpacity
+              style={[styles.communityCard, { backgroundColor: (theme as any).bookSpine }]}
+              onPress={() => router.push('/comunidad' as any)}
+            >
+              <LinearGradient
+                colors={[(theme as any).bookSpine, (theme as any).goldAccent]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.communityGradient}
+              >
+                <View style={styles.communityContent}>
+                  <View style={styles.communityLeft}>
+                    <Ionicons name="people" size={28} color="#FFFFFF" />
+                    <View style={styles.communityText}>
+                      <Text style={styles.communityTitle}>📖 Comunidad Lectora</Text>
+                      <Text style={styles.communitySubtitle}>
+                        Únete a la conversación literaria
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.communityRightIcon}>
+                    <Text style={styles.arrowOrnament}>→</Text>
+                  </View>
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+
             {/* Stats Cards */}
             {user && (
               <View style={styles.statsContainer}>
@@ -308,35 +357,52 @@ export default function HomeScreen() {
             {/* Recommendations Section */}
             <View style={styles.recommendationsSection}>
               <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  {user ? '🔥 Para ti' : '📚 Popular'}
-                </Text>
-                <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-                  {user
-                    ? 'Basado en tus preferencias'
-                    : 'Los más leídos esta semana'
-                  }
-                </Text>
+                <View style={styles.sectionTitleContainer}>
+                  <Text style={styles.sectionOrnament}>✦ ❖ ✦</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                    {user ? '� Recomendado para Ti' : '🌟 Joyas Literarias'}
+                  </Text>
+                  <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+                    {user
+                      ? 'Seleccionados especialmente según tus gustos'
+                      : 'Las obras más aclamadas de nuestra biblioteca'
+                    }
+                  </Text>
+                </View>
               </View>
 
               {loadingRecommendations ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={theme.tint} />
-                  <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-                    Cargando recomendaciones...
-                  </Text>
+                <View style={[styles.loadingContainer, { backgroundColor: (theme as any).pageYellow }]}>
+                  <View style={styles.loadingContent}>
+                    <Ionicons name="library-outline" size={48} color={theme.tint} />
+                    <ActivityIndicator size="large" color={theme.tint} style={styles.spinner} />
+                    <Text style={[styles.loadingText, { color: theme.text }]}>
+                      Explorando la biblioteca...
+                    </Text>
+                    <Text style={[styles.loadingSubtext, { color: theme.textSecondary }]}>
+                      Seleccionando las mejores recomendaciones
+                    </Text>
+                  </View>
                 </View>
               ) : recommendedBooks.length > 0 ? (
                 <SearchResults results={recommendedBooks} onBookPress={handleBookPress} />
               ) : (
-                <View style={[styles.emptyState, { backgroundColor: theme.card }]}>
-                  <Ionicons name="library-outline" size={64} color={theme.icon} />
-                  <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
-                    No hay recomendaciones
-                  </Text>
-                  <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
-                    Explora libros para obtener recomendaciones personalizadas
-                  </Text>
+                <View style={[styles.emptyState, { backgroundColor: (theme as any).pageYellow }]}>
+                  <View style={styles.emptyStateContent}>
+                    <Ionicons name="library-outline" size={64} color={theme.tint} />
+                    <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
+                      📖 Tu biblioteca personal te espera
+                    </Text>
+                    <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
+                      Explora géneros y autores para descubrir recomendaciones hechas a tu medida
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.exploreButton, { backgroundColor: theme.tint }]}
+                      onPress={() => router.push('/explore' as any)}
+                    >
+                      <Text style={styles.exploreButtonText}>🔍 Explorar Catálogo</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             </View>
@@ -351,139 +417,335 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // Header Styles - Library Inspired
   heroHeader: {
     paddingHorizontal: 20,
-    paddingBottom: 30,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingBottom: 35,
+    position: 'relative',
+    marginTop: -20, // Conectar con el header superior
+  },
+  decorativeBorder: {
+    position: 'absolute',
+    top: -5, // Ajustado para conectar mejor
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  decorativeBottomBorder: {
+    position: 'absolute',
+    bottom: 0,
+    left: 20,
+    right: 20,
+    height: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   heroContent: {
-    gap: 20,
+    gap: 25,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  greetingSection: {
+    flex: 1,
+    marginRight: 20,
+  },
   heroGreeting: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   heroTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginTop: 4,
+    marginTop: 6,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
-  logoCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  heroSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '500',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  bookIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-  modernSearchContainer: {
+  ornament: {
+    alignItems: 'center',
+  },
+  ornamentText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: 'bold',
+  },
+
+  // Search Styles - Elegant Design
+  searchSection: {
+    gap: 10,
+  },
+  searchLabel: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '600',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  elegantSearchContainer: {
+    padding: 3,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  searchBorder: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    borderRadius: 17,
+    paddingHorizontal: 18,
     height: 56,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 69, 19, 0.1)',
   },
   searchIcon: {
     marginRight: 12,
   },
-  modernSearchInput: {
+  elegantSearchInput: {
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
+    letterSpacing: 0.3,
   },
   clearIconButton: {
     padding: 4,
   },
+
+  // Content Styles
   content: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
+    paddingTop: 25, // Pequeño espacio arriba
   },
+
+  // Loading Styles - Enhanced
   loadingContainer: {
-    paddingVertical: 60,
+    paddingVertical: 50,
+    paddingHorizontal: 30,
     alignItems: 'center',
-    gap: 16,
+    borderRadius: 20,
+    margin: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 69, 19, 0.1)',
+  },
+  loadingContent: {
+    alignItems: 'center',
+    gap: 15,
+  },
+  spinner: {
+    marginVertical: 10,
   },
   loadingText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
   },
+  loadingSubtext: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
+  // Results and Home Content
   resultsContainer: {
     flex: 1,
+  },
+  homeContent: {
+    gap: 30,
+  },
+
+  // Section Headers - Ornamental
+  sectionHeader: {
+    marginBottom: 25,
+  },
+  sectionTitleContainer: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionOrnament: {
+    fontSize: 16,
+    color: '#DAA520',
+    fontWeight: 'bold',
+    letterSpacing: 2,
   },
   sectionTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    textAlign: 'center',
+    letterSpacing: 0.5,
   },
   sectionSubtitle: {
     fontSize: 14,
     fontWeight: '500',
+    textAlign: 'center',
+    fontStyle: 'italic',
     marginTop: 4,
   },
+
+  // Empty State - Enhanced
   emptyState: {
     padding: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    gap: 12,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 12,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  homeContent: {
-    gap: 24,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    padding: 20,
-    borderRadius: 16,
-    alignItems: 'center',
-    gap: 8,
+    margin: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 69, 19, 0.1)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
+  emptyStateContent: {
+    alignItems: 'center',
+    gap: 15,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 15,
+  },
+  emptyStateText: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 10,
+  },
+  exploreButton: {
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  exploreButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+
+  // Stats Styles
+  statsContainer: {
+    flexDirection: 'row',
+    gap: 15,
+  },
+  statCard: {
+    flex: 1,
+    padding: 25,
+    borderRadius: 18,
+    alignItems: 'center',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 69, 19, 0.1)',
+  },
   statValue: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
   },
   statLabel: {
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
+
+  // Recommendations Section
   recommendationsSection: {
     flex: 1,
   },
-  sectionHeader: {
-    marginBottom: 20,
+
+  // Community Card - Enhanced
+  communityCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 69, 19, 0.1)',
+  },
+  communityGradient: {
+    padding: 25,
+  },
+  communityContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  communityLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+    flex: 1,
+  },
+  communityText: {
+    gap: 6,
+    flex: 1,
+  },
+  communityTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  communitySubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+    fontStyle: 'italic',
+  },
+  communityRightIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowOrnament: {
+    fontSize: 24,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: 'bold',
   },
 });

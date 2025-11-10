@@ -109,6 +109,11 @@ export interface CreateCommentRequest {
     content: string;
 }
 
+export interface UpdateCommentRequest {
+    commentId: number;
+    content: string;
+}
+
 // Rating Types
 export interface RatingResponse {
     id: number;
@@ -139,4 +144,36 @@ export interface UpdateUserProfileRequest {
     username?: string;
     bio?: string;
     favoriteGenres?: string[];
+}
+
+// Post Types
+export interface PostResponse {
+    id: number;
+    title: string;
+    content: string;
+    bookTitle?: string | null;
+    bookAuthor?: string | null;
+    bookId?: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    user: {
+        id: number;
+        username: string;
+    };
+}
+
+export interface CreatePostRequest {
+    title: string;
+    content: string;
+    bookTitle?: string;
+    bookAuthor?: string;
+    bookId?: string;
+}
+
+export interface UpdatePostRequest {
+    title?: string;
+    content?: string;
+    bookTitle?: string;
+    bookAuthor?: string;
+    bookId?: string;
 }

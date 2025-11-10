@@ -8,6 +8,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { Book } from '@/lib/api/types';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 interface BookCardProps {
   book: Book;
@@ -17,6 +19,8 @@ interface BookCardProps {
 export default function BookCard({ book, onPress }: BookCardProps) {
   const { width: screenWidth } = Dimensions.get('window');
   const isTablet = screenWidth > 600;
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
 
   // Validar y limpiar los datos del libro de forma más estricta
   const safeBook = {
@@ -39,7 +43,7 @@ export default function BookCard({ book, onPress }: BookCardProps) {
           key={i}
           style={[
             styles.star,
-            { color: i <= fullStars ? '#FFD700' : '#DDD' }
+            { color: i <= fullStars ? (theme as any).goldAccent : theme.textMuted }
           ]}
         >
           ★
@@ -63,8 +67,11 @@ export default function BookCard({ book, onPress }: BookCardProps) {
       style={[
         styles.bookCard,
         {
+          backgroundColor: theme.card,
           width: isTablet ? (screenWidth - 64) / 3 : (screenWidth - 48) / 2,
-          minHeight: isTablet ? 380 : 320
+          minHeight: isTablet ? 380 : 320,
+          borderColor: theme.border,
+          shadowColor: theme.shadow,
         }
       ]}
       onPress={() => onPress(safeBook)}
@@ -78,30 +85,38 @@ export default function BookCard({ book, onPress }: BookCardProps) {
         {safeBook.image ? (
           <Image source={{ uri: safeBook.image }} style={styles.coverImage} />
         ) : (
-          <View style={styles.placeholderCover}>
-            <Text style={styles.placeholderIcon}>📖</Text>
+          <View style={[styles.placeholderCover, {
+            backgroundColor: (theme as any).pageYellow,
+            borderColor: theme.tint
+          }]}>
+            <Text style={[styles.placeholderIcon, { color: theme.tint }]}>�</Text>
           </View>
         )}
+
+        {/* Decorative corner ornament */}
+        <View style={[styles.cornerOrnament, { backgroundColor: (theme as any).goldAccent }]}>
+          <Text style={styles.ornamentText}>✦</Text>
+        </View>
       </View>
 
       <View style={styles.bookInfo}>
-        <Text style={styles.bookTitle} numberOfLines={2}>
+        <Text style={[styles.bookTitle, { color: theme.text }]} numberOfLines={2}>
           {renderSafeText(safeBook.title, 'Título no disponible')}
         </Text>
-        <Text style={styles.bookAuthor} numberOfLines={1}>
-          {renderSafeText(safeBook.authors, 'Autor desconocido')}
+        <Text style={[styles.bookAuthor, { color: theme.tint }]} numberOfLines={1}>
+          por {renderSafeText(safeBook.authors, 'Autor desconocido')}
         </Text>
 
         {safeBook.averageRating && safeBook.averageRating > 0 && (
           <View style={styles.ratingContainer}>
             {renderStars(safeBook.averageRating)}
-            <Text style={styles.ratingText}>
+            <Text style={[styles.ratingText, { color: theme.textSecondary }]}>
               {renderSafeText(safeBook.averageRating.toFixed(1), '0.0')}
             </Text>
           </View>
         )}
 
-        <Text style={styles.bookDescription} numberOfLines={3}>
+        <Text style={[styles.bookDescription, { color: theme.textSecondary }]} numberOfLines={3}>
           {(() => {
             const description = renderSafeText(safeBook.description, 'Sin descripción disponible');
             return description.length > 100 ? description.substring(0, 100) + '...' : description;
@@ -114,27 +129,26 @@ export default function BookCard({ book, onPress }: BookCardProps) {
 
 const styles = StyleSheet.create({
   bookCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
+    marginBottom: 12,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    position: 'relative',
   },
   bookCover: {
     width: '100%',
-    marginBottom: 10,
-    borderRadius: 8,
+    marginBottom: 12,
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#F8F8F8',
+    backgroundColor: '#F5F5DC', // Pergamino base
+    position: 'relative',
   },
   coverImage: {
     width: '100%',
@@ -144,59 +158,77 @@ const styles = StyleSheet.create({
   placeholderCover: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#D2B48C',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#8B4513',
+    borderStyle: 'solid',
   },
   placeholderIcon: {
-    fontSize: Dimensions.get('window').width > 600 ? 45 : 40,
-    color: '#8B4513',
+    fontSize: Dimensions.get('window').width > 600 ? 48 : 42,
+  },
+  cornerOrnament: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  ornamentText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   bookInfo: {
     flex: 1,
     width: '100%',
+    gap: 6,
   },
   bookTitle: {
     fontSize: Dimensions.get('window').width > 600 ? 18 : 16,
     fontWeight: 'bold',
-    color: '#333',
     textAlign: 'center',
-    marginBottom: 6,
-    lineHeight: Dimensions.get('window').width > 600 ? 22 : 20,
+    lineHeight: Dimensions.get('window').width > 600 ? 24 : 22,
+    letterSpacing: 0.3,
   },
   bookAuthor: {
-    fontSize: Dimensions.get('window').width > 600 ? 16 : 14,
-    color: '#4682B4',
+    fontSize: Dimensions.get('window').width > 600 ? 15 : 13,
     textAlign: 'center',
-    marginBottom: 8,
     fontWeight: '600',
+    fontStyle: 'italic',
+    letterSpacing: 0.2,
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginVertical: 4,
   },
   starsContainer: {
     flexDirection: 'row',
-    marginRight: 5,
+    marginRight: 6,
   },
   star: {
-    fontSize: Dimensions.get('window').width > 600 ? 14 : 12,
+    fontSize: Dimensions.get('window').width > 600 ? 16 : 14,
     marginHorizontal: 1,
   },
   ratingText: {
     fontSize: Dimensions.get('window').width > 600 ? 14 : 12,
-    color: '#666',
     fontWeight: 'bold',
+    letterSpacing: 0.3,
   },
   bookDescription: {
-    fontSize: Dimensions.get('window').width > 600 ? 14 : 12,
-    color: '#666',
+    fontSize: Dimensions.get('window').width > 600 ? 13 : 11,
     textAlign: 'center',
     lineHeight: Dimensions.get('window').width > 600 ? 18 : 16,
     flex: 1,
+    fontStyle: 'italic',
   },
 });

@@ -58,7 +58,7 @@ const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose, book }) =
     useEffect(() => {
         if (visible) {
             loadPredefinedQuestions();
-            setChatMessages([]); // Limpiar mensajes anteriores
+            setChatMessages([]);
             setCustomQuestion('');
             setShowCustomInput(false);
         }

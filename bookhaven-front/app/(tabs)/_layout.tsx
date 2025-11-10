@@ -57,6 +57,12 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="comunidad"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
           name="explore"
           options={{
             href: null,
@@ -74,7 +80,7 @@ export default function TabLayout() {
 
   // Si hay usuario autenticado, mostrar Header pequeño y ocultar tab bar
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
       <Header />
       <Tabs
         screenOptions={{

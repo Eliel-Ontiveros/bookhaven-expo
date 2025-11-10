@@ -8,24 +8,26 @@ datasource db {
 }
 
 model User {
-  id             Int         @id @default(autoincrement())
-  email          String      @unique
+  id             Int             @id @default(autoincrement())
+  email          String          @unique
   password       String
-  username       String      @unique
+  username       String          @unique
   birthdate      DateTime
-  profile        UserProfile @relation(fields: [profileId], references: [id])
   profileId      Int
-  favoriteGenres FavoriteGenre[] 
-  createdAt      DateTime    @default(now())
-  bookLists      BookList[] 
-  comments       Comment[]   
-  ratings       BookRating[] 
+  createdAt      DateTime        @default(now())
+  bookLists      BookList[]
+  ratings        BookRating[]
+  comments       Comment[]
+  favoriteGenres FavoriteGenre[]
+  posts          Post[]
+  postComments   PostComment[]
+  profile        UserProfile     @relation(fields: [profileId], references: [id])
 }
 
 model UserProfile {
-  id        Int    @id @default(autoincrement())
-  bio       String? 
-  User      User[]
+  id   Int     @id @default(autoincrement())
+  bio  String?
+  User User[]
 }
 
 model FavoriteGenre {
@@ -36,57 +38,80 @@ model FavoriteGenre {
 }
 
 model Book {
-  id        String           @id
-  title     String
-  authors   String
-  image     String?
-  description String?    
-  categories String[]       
-  averageRating Float?       
+  id              String          @id
+  title           String
+  authors         String
+  image           String?
+  averageRating   Float?
+  categories      String[]
+  description     String?
   BookListEntries BookListEntry[]
-  comments        Comment[]       
-  ratings         BookRating[]  
+  ratings         BookRating[]
+  comments        Comment[]
 }
 
 model BookRating {
   id        Int      @id @default(autoincrement())
-  rating    Int     
-  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
   userId    Int
-  book      Book     @relation(fields: [bookId], references: [id])
   bookId    String
   createdAt DateTime @default(now())
+  book      Book     @relation(fields: [bookId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
-  @@unique([userId, bookId]) 
+  @@unique([userId, bookId])
 }
 
 model BookList {
   id        Int             @id @default(autoincrement())
   name      String
-  user      User            @relation(fields: [userId], references: [id])
   userId    Int
-  entries   BookListEntry[]
   createdAt DateTime        @default(now())
+  user      User            @relation(fields: [userId], references: [id])
+  entries   BookListEntry[]
 
   @@unique([name, userId])
 }
 
 model BookListEntry {
-  id        Int      @id @default(autoincrement())
-  book      Book     @relation(fields: [bookId], references: [id])
-  bookId    String
-  bookList  BookList @relation(fields: [bookListId], references: [id])
+  id         Int      @id @default(autoincrement())
+  bookId     String
   bookListId Int
-  addedAt   DateTime @default(now())
+  addedAt    DateTime @default(now())
+  book       Book     @relation(fields: [bookId], references: [id])
+  bookList   BookList @relation(fields: [bookListId], references: [id])
 }
 
 model Comment {
   id        Int      @id @default(autoincrement())
   content   String
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
   userId    Int
-  book      Book     @relation(fields: [bookId], references: [id])
   bookId    String
+  book      Book     @relation(fields: [bookId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
+model Post {
+  id         Int           @id @default(autoincrement())
+  title      String
+  content    String
+  bookTitle  String?
+  bookAuthor String?
+  bookId     String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  userId     Int
+  user       User          @relation(fields: [userId], references: [id])
+  comments   PostComment[]
+}
+
+model PostComment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+  userId    Int
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}

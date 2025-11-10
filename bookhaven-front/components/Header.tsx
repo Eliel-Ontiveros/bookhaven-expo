@@ -36,7 +36,7 @@ export default function Header() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <LinearGradient
         colors={theme.gradient as any}
         start={{ x: 0, y: 0 }}
@@ -49,7 +49,7 @@ export default function Header() {
           onPress={() => router.push('/inicio')}
         >
           <View style={styles.logoCircle}>
-            <Ionicons name="book" size={24} color="#FFFFFF" />
+            <Ionicons name="book" size={15} color="#FFFFFF" />
           </View>
           <Text style={styles.logoMainText}>BookHaven</Text>
         </TouchableOpacity>
@@ -83,33 +83,26 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
     minHeight: 60,
+    marginBottom: 0, // Asegurar que no haya margen inferior
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   logoMainContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   logoCircle: {
-    width: 36,
-    height: 36,
+    width: 20,
+    height: 20,
     borderRadius: 18,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
@@ -122,7 +115,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   logoMainText: {
-    fontSize: 22,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#FFFFFF',
     letterSpacing: 0.8,

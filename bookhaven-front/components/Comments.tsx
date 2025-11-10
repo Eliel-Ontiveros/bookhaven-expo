@@ -8,11 +8,13 @@ import {
     TouchableOpacity,
     Alert,
     ActivityIndicator,
+    Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiService } from '@/lib/api/service';
 import { Comment, CreateCommentRequest } from '@/lib/api/types';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CommentsProps {
     bookId: string;
@@ -23,8 +25,14 @@ export default function Comments({ bookId }: CommentsProps) {
     const [loading, setLoading] = useState(false);
     const [posting, setPosting] = useState(false);
     const [newComment, setNewComment] = useState('');
+    const [editingComment, setEditingComment] = useState<Comment | null>(null);
+    const [editContent, setEditContent] = useState('');
+    const [updatingComment, setUpdatingComment] = useState(false);
+    const [deletingComment, setDeletingComment] = useState<number | null>(null);
+
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const { user } = useAuth();
 
     useEffect(() => {
         if (bookId) {
@@ -36,25 +44,27 @@ export default function Comments({ bookId }: CommentsProps) {
         setLoading(true);
         try {
             const response = await apiService.getBookComments(bookId);
+
             if (response.success && response.data) {
                 // Validar y limpiar los datos de comentarios
-                const safeComments = response.data.map((comment: any) => ({
-                    id: comment.id || 0,
-                    content: comment.content && typeof comment.content === 'string'
-                        ? comment.content
-                        : 'Comentario no disponible',
-                    createdAt: comment.createdAt || new Date().toISOString(),
-                    bookId: comment.bookId || bookId,
-                    userId: comment.userId || 0,
-                    user: {
-                        id: comment.user?.id || 0,
-                        username: comment.user?.username && typeof comment.user.username === 'string'
-                            ? comment.user.username
-                            : 'Usuario desconocido'
-                    }
-                }));
+                const safeComments = response.data.map((comment: any) => {
+                    return {
+                        id: comment.id || 0,
+                        content: comment.content && typeof comment.content === 'string'
+                            ? comment.content
+                            : 'Comentario no disponible',
+                        createdAt: comment.createdAt || new Date().toISOString(),
+                        bookId: comment.bookId || bookId,
+                        userId: comment.userId || 0,
+                        user: {
+                            id: comment.user?.id || 0,
+                            username: (comment.user?.name || comment.user?.username) && typeof (comment.user.name || comment.user.username) === 'string'
+                                ? (comment.user.name || comment.user.username)
+                                : 'Usuario desconocido'
+                        }
+                    };
+                });
 
-                console.log('📋 Safe comments processed:', safeComments.length);
                 setComments(safeComments);
             } else {
                 console.error('Error fetching comments:', response.error);
@@ -84,7 +94,16 @@ export default function Comments({ bookId }: CommentsProps) {
             const response = await apiService.createComment(commentData);
 
             if (response.success && response.data) {
-                setComments(prev => [response.data!, ...prev]);
+                // Convertir la respuesta del servidor para que coincida con nuestro formato
+                const newCommentFormatted = {
+                    ...response.data,
+                    user: {
+                        id: response.data.user.id,
+                        username: (response.data.user as any).name || response.data.user.username || 'Usuario desconocido'
+                    }
+                };
+
+                setComments(prev => [newCommentFormatted as any, ...prev]);
                 setNewComment('');
                 Alert.alert('¡Éxito!', 'Comentario agregado correctamente');
             } else {
@@ -95,6 +114,82 @@ export default function Comments({ bookId }: CommentsProps) {
         } finally {
             setPosting(false);
         }
+    };
+
+    const startEdit = (comment: Comment) => {
+        setEditingComment(comment);
+        setEditContent(comment.content);
+    };
+
+    const cancelEdit = () => {
+        setEditingComment(null);
+        setEditContent('');
+    };
+
+    const saveEdit = async () => {
+        if (!editingComment || !editContent.trim()) {
+            Alert.alert('Error', 'El contenido del comentario no puede estar vacío');
+            return;
+        }
+
+        setUpdatingComment(true);
+        try {
+            const response = await apiService.updateComment(editingComment.id, editContent.trim());
+
+            if (response.success && response.data) {
+                // Convertir la respuesta del servidor para que coincida con nuestro formato
+                const updatedCommentFormatted = {
+                    ...response.data,
+                    user: {
+                        id: response.data.user.id,
+                        username: (response.data.user as any).name || response.data.user.username || 'Usuario desconocido'
+                    }
+                };
+
+                setComments(prev => prev.map(comment =>
+                    comment.id === editingComment.id ? updatedCommentFormatted as any : comment
+                ));
+                cancelEdit();
+                Alert.alert('¡Éxito!', 'Comentario actualizado correctamente');
+            } else {
+                Alert.alert('Error', response.error || 'No se pudo actualizar el comentario');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Error al actualizar el comentario');
+        } finally {
+            setUpdatingComment(false);
+        }
+    };
+
+    const deleteComment = async (commentId: number) => {
+        Alert.alert(
+            'Eliminar comentario',
+            '¿Estás seguro de que quieres eliminar este comentario?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Eliminar',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setDeletingComment(commentId);
+                        try {
+                            const response = await apiService.deleteComment(commentId);
+
+                            if (response.success) {
+                                setComments(prev => prev.filter(comment => comment.id !== commentId));
+                                Alert.alert('¡Éxito!', 'Comentario eliminado correctamente');
+                            } else {
+                                Alert.alert('Error', response.error || 'No se pudo eliminar el comentario');
+                            }
+                        } catch (error) {
+                            Alert.alert('Error', 'Error al eliminar el comentario');
+                        } finally {
+                            setDeletingComment(null);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     const formatDate = (dateString: string) => {
@@ -116,8 +211,8 @@ export default function Comments({ bookId }: CommentsProps) {
         // Validación defensiva para datos del usuario
         const safeUser = {
             id: item.user?.id || 0,
-            username: item.user?.username && typeof item.user.username === 'string'
-                ? item.user.username
+            username: (item.user?.username || (item.user as any)?.name) && typeof (item.user.username || (item.user as any).name) === 'string'
+                ? (item.user.username || (item.user as any).name)
                 : 'Usuario desconocido'
         };
 
@@ -129,6 +224,9 @@ export default function Comments({ bookId }: CommentsProps) {
             createdAt: item.createdAt || new Date().toISOString(),
             user: safeUser
         };
+
+        // Verificar si el usuario actual puede editar/eliminar este comentario
+        const canEditDelete = user && (user.id === item.userId || user.id === safeUser.id);
 
         return (
             <View style={[styles.commentItem, { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' }]}>
@@ -146,6 +244,36 @@ export default function Comments({ bookId }: CommentsProps) {
                             {formatDate(safeComment.createdAt)}
                         </Text>
                     </View>
+                    {canEditDelete && (
+                        <View style={styles.commentActions}>
+                            <TouchableOpacity
+                                onPress={() => startEdit(item)}
+                                style={[styles.actionButton, { backgroundColor: isDark ? '#48484A' : '#E5E5EA' }]}
+                                disabled={deletingComment === item.id}
+                            >
+                                <Ionicons
+                                    name="pencil"
+                                    size={14}
+                                    color={isDark ? '#007AFF' : '#007AFF'}
+                                />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => deleteComment(item.id)}
+                                style={[styles.actionButton, { backgroundColor: isDark ? '#48484A' : '#E5E5EA' }]}
+                                disabled={deletingComment === item.id}
+                            >
+                                {deletingComment === item.id ? (
+                                    <ActivityIndicator size="small" color="#FF3B30" />
+                                ) : (
+                                    <Ionicons
+                                        name="trash"
+                                        size={14}
+                                        color="#FF3B30"
+                                    />
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
                 <Text style={[styles.commentContent, { color: isDark ? '#FFFFFF' : '#000000' }]}>
                     {safeComment.content}
@@ -231,6 +359,60 @@ export default function Comments({ bookId }: CommentsProps) {
                     contentContainerStyle={styles.commentsContainer}
                 />
             )}
+
+            {/* Modal para editar comentario */}
+            <Modal
+                visible={!!editingComment}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={cancelEdit}
+            >
+                <View style={[styles.modalContainer, { backgroundColor: isDark ? '#000000' : '#FFFFFF' }]}>
+                    <View style={[styles.modalHeader, { borderBottomColor: isDark ? '#2C2C2E' : '#E5E5EA' }]}>
+                        <TouchableOpacity onPress={cancelEdit}>
+                            <Text style={[styles.modalCancelText, { color: isDark ? '#007AFF' : '#007AFF' }]}>
+                                Cancelar
+                            </Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.modalTitle, { color: isDark ? '#FFFFFF' : '#000000' }]}>
+                            Editar comentario
+                        </Text>
+                        <TouchableOpacity
+                            onPress={saveEdit}
+                            disabled={!editContent.trim() || updatingComment}
+                        >
+                            {updatingComment ? (
+                                <ActivityIndicator size="small" color="#007AFF" />
+                            ) : (
+                                <Text style={[styles.modalSaveText, {
+                                    color: editContent.trim() ? '#007AFF' : (isDark ? '#8E8E93' : '#6D6D70'),
+                                    opacity: editContent.trim() ? 1 : 0.6
+                                }]}>
+                                    Guardar
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.modalContent}>
+                        <TextInput
+                            style={[styles.editCommentInput, {
+                                backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7',
+                                color: isDark ? '#FFFFFF' : '#000000',
+                                borderColor: isDark ? '#38383A' : '#C6C6C8'
+                            }]}
+                            placeholder="Edita tu comentario..."
+                            placeholderTextColor={isDark ? '#8E8E93' : '#6D6D70'}
+                            value={editContent}
+                            onChangeText={setEditContent}
+                            multiline
+                            numberOfLines={6}
+                            maxLength={500}
+                            autoFocus
+                        />
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -330,6 +512,18 @@ const styles = StyleSheet.create({
     commentMeta: {
         flex: 1,
     },
+    commentActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    actionButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     username: {
         fontSize: 14,
         fontWeight: '600',
@@ -341,5 +535,40 @@ const styles = StyleSheet.create({
     commentContent: {
         fontSize: 15,
         lineHeight: 20,
+    },
+    modalContainer: {
+        flex: 1,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 0.5,
+    },
+    modalCancelText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    modalSaveText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    modalContent: {
+        flex: 1,
+        padding: 16,
+    },
+    editCommentInput: {
+        borderWidth: 1,
+        borderRadius: 12,
+        padding: 12,
+        fontSize: 16,
+        textAlignVertical: 'top',
+        minHeight: 120,
+        maxHeight: 200,
     },
 });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AuthService } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
-import { APIResponse, CommentResponse, CreateCommentRequest } from '@/lib/types/api';
+import { APIResponse, CommentResponse, CreateCommentRequest, UpdateCommentRequest } from '@/lib/types/api';
 
 export async function GET(req: NextRequest) {
   try {
@@ -119,6 +119,140 @@ export async function POST(req: NextRequest) {
     return NextResponse.json<APIResponse>({
       success: false,
       error: "Error al guardar comentario"
+    }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const user = await AuthService.getUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json<APIResponse>({
+        success: false,
+        error: 'No autorizado'
+      }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { commentId, content } = body;
+
+    if (!commentId || !content || !content.trim()) {
+      return NextResponse.json<APIResponse>({
+        success: false,
+        error: 'ID del comentario y contenido son obligatorios'
+      }, { status: 400 });
+    }
+
+    // Verificar que el comentario existe y pertenece al usuario
+    const existingComment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      include: { user: { select: { id: true, username: true } } }
+    });
+
+    if (!existingComment) {
+      return NextResponse.json<APIResponse>({
+        success: false,
+        error: 'Comentario no encontrado'
+      }, { status: 404 });
+    }
+
+    if (existingComment.userId !== user.id) {
+      return NextResponse.json<APIResponse>({
+        success: false,
+        error: 'No tienes permisos para editar este comentario'
+      }, { status: 403 });
+    }
+
+    const updatedComment = await prisma.comment.update({
+      where: { id: commentId },
+      data: { content: content.trim() },
+      include: {
+        user: {
+          select: { username: true, id: true }
+        }
+      },
+    });
+
+    const commentResponse: CommentResponse = {
+      id: updatedComment.id,
+      content: updatedComment.content,
+      createdAt: updatedComment.createdAt,
+      user: {
+        id: updatedComment.user.id,
+        name: updatedComment.user.username
+      }
+    };
+
+    return NextResponse.json<APIResponse<CommentResponse>>({
+      success: true,
+      data: commentResponse,
+      message: 'Comentario actualizado exitosamente'
+    });
+
+  } catch (error) {
+    console.error("Error al actualizar comentario:", error);
+    return NextResponse.json<APIResponse>({
+      success: false,
+      error: "Error al actualizar comentario"
+    }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await AuthService.getUserFromRequest(req);
+
+    if (!user) {
+      return NextResponse.json<APIResponse>({
+        success: false,
+        error: 'No autorizado'
+      }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const commentId = searchParams.get("commentId");
+
+    if (!commentId) {
+      return NextResponse.json<APIResponse>({
+        success: false,
+        error: 'ID del comentario es obligatorio'
+      }, { status: 400 });
+    }
+
+    // Verificar que el comentario existe y pertenece al usuario
+    const existingComment = await prisma.comment.findUnique({
+      where: { id: parseInt(commentId) },
+    });
+
+    if (!existingComment) {
+      return NextResponse.json<APIResponse>({
+        success: false,
+        error: 'Comentario no encontrado'
+      }, { status: 404 });
+    }
+
+    if (existingComment.userId !== user.id) {
+      return NextResponse.json<APIResponse>({
+        success: false,
+        error: 'No tienes permisos para eliminar este comentario'
+      }, { status: 403 });
+    }
+
+    await prisma.comment.delete({
+      where: { id: parseInt(commentId) },
+    });
+
+    return NextResponse.json<APIResponse>({
+      success: true,
+      message: 'Comentario eliminado exitosamente'
+    });
+
+  } catch (error) {
+    console.error("Error al eliminar comentario:", error);
+    return NextResponse.json<APIResponse>({
+      success: false,
+      error: "Error al eliminar comentario"
     }, { status: 500 });
   }
 }

@@ -116,7 +116,6 @@ Descripción del libro: ${bookDescription || 'No disponible'}`;
             });
         }
 
-        // Crear el prompt optimizado para respuestas concisas
         const prompt = `Responde de forma CONCISA y DIRECTA sobre el libro "${bookTitle}" de ${bookAuthor}.
 
 Información del libro:

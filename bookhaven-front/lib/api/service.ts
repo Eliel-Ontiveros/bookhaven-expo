@@ -303,6 +303,19 @@ class APIService {
     });
   }
 
+  async updateComment(commentId: number, content: string): Promise<APIResponse<Comment>> {
+    return this.authenticatedRequest<Comment>(API_CONFIG.ENDPOINTS.COMMENTS, {
+      method: 'PUT',
+      body: JSON.stringify({ commentId, content }),
+    });
+  }
+
+  async deleteComment(commentId: number): Promise<APIResponse<void>> {
+    return this.authenticatedRequest<void>(`${API_CONFIG.ENDPOINTS.COMMENTS}?commentId=${commentId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Ratings methods
   async getBookRatings(bookId: string, userId?: number): Promise<APIResponse<BookRating[]>> {
     let endpoint = `${API_CONFIG.ENDPOINTS.RATINGS}?bookId=${bookId}`;
@@ -413,6 +426,67 @@ class APIService {
     };
 
     return this.searchBooks(searchParams);
+  }
+
+  // Posts methods
+  async getPosts(page: number = 1, limit: number = 20, userId?: number): Promise<APIResponse<any>> {
+    let endpoint = `/api/posts?page=${page}&limit=${limit}`;
+    if (userId) {
+      endpoint += `&userId=${userId}`;
+    }
+    return this.request(endpoint);
+  }
+
+  async createPost(postData: {
+    title: string;
+    content: string;
+    bookTitle?: string;
+    bookAuthor?: string;
+    bookId?: string;
+  }): Promise<APIResponse<any>> {
+    console.log('📝 Creating post with data:', postData);
+    return this.authenticatedRequest('/api/posts', {
+      method: 'POST',
+      body: JSON.stringify(postData),
+    });
+  }
+
+  async getPost(postId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/posts/${postId}`);
+  }
+
+  async updatePost(postId: number, postData: {
+    title?: string;
+    content?: string;
+    bookTitle?: string;
+    bookAuthor?: string;
+    bookId?: string;
+  }): Promise<APIResponse<any>> {
+    return this.authenticatedRequest(`/api/posts/${postId}`, {
+      method: 'PUT',
+      body: JSON.stringify(postData),
+    });
+  }
+
+  async deletePost(postId: number): Promise<APIResponse<void>> {
+    return this.authenticatedRequest(`/api/posts/${postId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Post Comments methods
+  async getPostComments(postId: number): Promise<APIResponse<any[]>> {
+    return this.request(`/api/posts/${postId}/comments`);
+  }
+
+  async createPostComment(commentData: {
+    postId: number;
+    content: string;
+  }): Promise<APIResponse<any>> {
+    return this.authenticatedRequest(`/api/posts/${commentData.postId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content: commentData.content }),
+    });
   }
 }
 

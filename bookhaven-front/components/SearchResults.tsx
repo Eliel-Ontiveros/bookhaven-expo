@@ -88,7 +88,6 @@ export default function SearchResults({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Resultados de búsqueda</Text>
       <FlatList
         data={results}
         renderItem={renderBookItem}

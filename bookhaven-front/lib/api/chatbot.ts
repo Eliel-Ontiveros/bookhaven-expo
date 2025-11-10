@@ -82,9 +82,7 @@ export const askChatbotQuestion = async (request: ChatbotRequest): Promise<Chatb
     }
 };
 
-/**
- * Valida si la configuración del chatbot está disponible
- */
+
 export const validateChatbotAvailability = async (): Promise<boolean> => {
     try {
         await getPredefinedQuestions();
@@ -95,9 +93,6 @@ export const validateChatbotAvailability = async (): Promise<boolean> => {
     }
 };
 
-/**
- * Función de utilidad para formatear errores del chatbot
- */
 export const formatChatbotError = (error: any): string => {
     if (typeof error === 'string') {
         return error;
@@ -123,7 +118,6 @@ export const formatChatbotError = (error: any): string => {
     return 'Error de conexión. Verifica tu conexión a internet.';
 };
 
-// Constantes para límites y configuración
 export const CHATBOT_CONFIG = {
     MAX_QUESTION_LENGTH: 500,
     MAX_CHAT_MESSAGES: 50,

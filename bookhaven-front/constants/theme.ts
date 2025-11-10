@@ -1,93 +1,115 @@
 /**
- * Modern color palette for BookHaven app
- * Inspired by contemporary design systems with vibrant gradients
+ * BookHaven - Biblioteca Acogedora
+ * Paleta de colores inspirada en bibliotecas clásicas, pergaminos antiguos
+ * y la calidez de los libros. Tonos tierra, dorados y marrones cálidos.
  */
 
 import { Platform } from 'react-native';
 
-// Primary brand colors - Purple & Teal gradient theme
-const tintColorLight = '#7C3AED'; // Vivid Purple
-const tintColorDark = '#A78BFA'; // Light Purple
-const accentLight = '#14B8A6'; // Teal
-const accentDark = '#5EEAD4'; // Light Teal
+// Colores principales inspirados en biblioteca clásica
+const tintColorLight = '#8B4513'; // Marrón cuero de libro
+const tintColorDark = '#D2B48C'; // Beige cálido
+const accentLight = '#DAA520'; // Dorado elegante
+const accentDark = '#F4A460'; // Dorado suave
+
+// Paleta de colores adicionales
+const parchment = '#F5F5DC'; // Color pergamino
+const oldPaper = '#F7F3E9'; // Papel envejecido
+const inkBlue = '#191970'; // Azul tinta
+const leatherBrown = '#8B4513'; // Marrón cuero
+const goldLeaf = '#FFD700'; // Oro brillante
+const sageGreen = '#9CAF88'; // Verde salvia (para acentos naturales)
+const warmIvory = '#FFFFF0'; // Marfil cálido
 
 export const Colors = {
   light: {
-    // Text colors
-    text: '#1F2937',
-    textSecondary: '#6B7280',
-    textMuted: '#9CA3AF',
+    // Text colors - inspirados en tinta clásica
+    text: '#2F1B14', // Marrón muy oscuro (como tinta sepia)
+    textSecondary: '#5D4037', // Marrón medio
+    textMuted: '#8D6E63', // Marrón suave
 
-    // Background colors
-    background: '#FFFFFF',
-    backgroundSecondary: '#F9FAFB',
-    backgroundTertiary: '#F3F4F6',
+    // Background colors - tonos pergamino y papel
+    background: warmIvory, // Fondo principal marfil cálido
+    backgroundSecondary: parchment, // Fondo secundario pergamino
+    backgroundTertiary: oldPaper, // Fondo terciario papel envejecido
 
     // Card & Surface colors
-    card: '#FFFFFF',
-    cardHover: '#F9FAFB',
-    border: '#E5E7EB',
-    borderLight: '#F3F4F6',
+    card: parchment, // Tarjetas como pergamino
+    cardHover: oldPaper, // Hover más cálido
+    border: '#D7CCC8', // Bordes suaves marrones
+    borderLight: '#EFEBE9', // Bordes muy suaves
 
-    // Brand colors
-    tint: tintColorLight,
-    accent: accentLight,
+    // Brand colors - cuero y oro
+    tint: tintColorLight, // Marrón cuero principal
+    accent: accentLight, // Dorado elegante
 
     // Icon colors
-    icon: '#6B7280',
-    iconActive: tintColorLight,
-    tabIconDefault: '#9CA3AF',
-    tabIconSelected: tintColorLight,
+    icon: '#8D6E63', // Iconos en marrón suave
+    iconActive: tintColorLight, // Iconos activos en cuero
+    tabIconDefault: '#A1887F', // Tabs inactivos
+    tabIconSelected: tintColorLight, // Tabs activos
 
-    // Status colors
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    info: '#3B82F6',
+    // Status colors - tonos naturales
+    success: sageGreen, // Verde natural para éxito
+    warning: '#FF8F00', // Ámbar para advertencias
+    error: '#D32F2F', // Rojo suave para errores
+    info: inkBlue, // Azul tinta para información
 
     // Special colors
-    shadow: 'rgba(0, 0, 0, 0.1)',
-    overlay: 'rgba(0, 0, 0, 0.5)',
-    gradient: ['#7C3AED', '#14B8A6'],
+    shadow: 'rgba(139, 69, 19, 0.15)', // Sombras marrones suaves
+    overlay: 'rgba(47, 27, 20, 0.6)', // Overlay con tono sepia
+    gradient: [leatherBrown, accentLight], // Gradiente cuero a oro
+
+    // Colores adicionales para personalidad
+    bookSpine: leatherBrown, // Color lomo de libro
+    goldAccent: goldLeaf, // Detalles dorados
+    pageYellow: '#FFFACD', // Amarillo papel viejo
+    vintageRed: '#A0522D', // Rojo vintage para acentos
   },
   dark: {
-    // Text colors
-    text: '#F9FAFB',
-    textSecondary: '#D1D5DB',
-    textMuted: '#9CA3AF',
-    textPlaceholder: '#1111',
+    // Text colors - pergamino claro sobre fondo oscuro
+    text: parchment, // Texto principal pergamino
+    textSecondary: '#D7CCC8', // Texto secundario beige
+    textMuted: '#A1887F', // Texto suave
+    textPlaceholder: '#8D6E63', // Placeholder visible
 
-    // Background colors
-    background: '#111827',
-    backgroundSecondary: '#1F2937',
-    backgroundTertiary: '#374151',
+    // Background colors - biblioteca nocturna
+    background: '#1A1611', // Fondo principal muy oscuro con tono cálido
+    backgroundSecondary: '#2F2419', // Fondo secundario marrón oscuro
+    backgroundTertiary: '#3E2723', // Fondo terciario
 
     // Card & Surface colors
-    card: '#1F2937',
-    cardHover: '#374151',
-    border: '#374151',
-    borderLight: '#4B5563',
+    card: '#2F2419', // Tarjetas en marrón oscuro
+    cardHover: '#3E2723', // Hover más claro
+    border: '#4E342E', // Bordes marrones oscuros
+    borderLight: '#5D4037', // Bordes suaves
 
     // Brand colors
-    tint: tintColorDark,
-    accent: accentDark,
+    tint: tintColorDark, // Beige cálido
+    accent: accentDark, // Dorado suave
 
     // Icon colors
-    icon: '#9CA3AF',
-    iconActive: tintColorDark,
-    tabIconDefault: '#6B7280',
-    tabIconSelected: tintColorDark,
+    icon: '#A1887F', // Iconos beige
+    iconActive: tintColorDark, // Iconos activos beige cálido
+    tabIconDefault: '#8D6E63', // Tabs inactivos
+    tabIconSelected: tintColorDark, // Tabs activos
 
     // Status colors
-    success: '#34D399',
-    warning: '#FBBF24',
-    error: '#F87171',
-    info: '#60A5FA',
+    success: '#AED581', // Verde claro natural
+    warning: '#FFB74D', // Ámbar claro
+    error: '#E57373', // Rojo suave
+    info: '#64B5F6', // Azul suave
 
     // Special colors
-    shadow: 'rgba(0, 0, 0, 0.4)',
-    overlay: 'rgba(0, 0, 0, 0.7)',
-    gradient: ['#A78BFA', '#5EEAD4'],
+    shadow: 'rgba(0, 0, 0, 0.5)', // Sombras más profundas
+    overlay: 'rgba(26, 22, 17, 0.8)', // Overlay oscuro cálido
+    gradient: [tintColorDark, accentDark], // Gradiente beige a dorado suave
+
+    // Colores adicionales para personalidad
+    bookSpine: '#8D6E63', // Color lomo más suave
+    goldAccent: accentDark, // Dorado suave para detalles
+    pageYellow: '#FFF9C4', // Amarillo suave
+    vintageRed: '#FFAB91', // Rojo vintage suave
   },
 };
 

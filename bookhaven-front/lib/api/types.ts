@@ -59,8 +59,22 @@ export interface Comment {
   content: string;
   createdAt: string;
   userId: number;
-  bookId: string;
+  bookId?: string;
+  postId?: number;
   user: Pick<User, 'id' | 'username'>;
+}
+
+// Post Comments
+export interface PostComment {
+  id: number;
+  content: string;
+  createdAt: string;
+  userId: number;
+  postId: number;
+  user: {
+    id: number;
+    username: string;
+  };
 }
 
 // API Request types
@@ -100,7 +114,13 @@ export interface AddBookToListRequest {
 }
 
 export interface CreateCommentRequest {
-  bookId: string;
+  bookId?: string;
+  postId?: number;
+  content: string;
+}
+
+export interface CreatePostCommentRequest {
+  postId: number;
   content: string;
 }
 
@@ -113,4 +133,37 @@ export interface UpdateProfileRequest {
   username?: string;
   bio?: string;
   favoriteGenres?: string[];
+}
+
+// Post Types
+export interface Post {
+  id: number;
+  title: string;
+  content: string;
+  bookTitle?: string | null;
+  bookAuthor?: string | null;
+  bookId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: number;
+    username: string;
+  };
+  comments?: PostComment[];
+}
+
+export interface CreatePostRequest {
+  title: string;
+  content: string;
+  bookTitle?: string;
+  bookAuthor?: string;
+  bookId?: string;
+}
+
+export interface UpdatePostRequest {
+  title?: string;
+  content?: string;
+  bookTitle?: string;
+  bookAuthor?: string;
+  bookId?: string;
 }
