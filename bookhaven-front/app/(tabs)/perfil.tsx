@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   Alert,
   StatusBar,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/lib/api/service';
 import { BookList } from '@/lib/api/types';
@@ -21,7 +21,6 @@ import { Colors } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
-  const [selectedList, setSelectedList] = useState('');
   const { user, logout } = useAuth();
   const [bookLists, setBookLists] = useState<BookList[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +30,10 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
+  
+  // Referencias para animaciones
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     loadBookLists();
@@ -57,24 +60,6 @@ export default function ProfileScreen() {
     setLoading(false);
   };
 
-  const handleNavigation = (section: string) => {
-    console.log('Navigate to:', section);
-  };
-
-  const handleListSelection = (listId: string) => {
-    setSelectedList(listId);
-    if (listId) {
-      const selectedListObj = bookLists.find(list => list.id.toString() === listId);
-      if (selectedListObj) {
-        setSelectedListData({
-          id: selectedListObj.id,
-          name: selectedListObj.name
-        });
-        setShowBookListModal(true);
-      }
-    }
-  };
-
   if (loading || !user) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -87,37 +72,117 @@ export default function ProfileScreen() {
     );
   }
 
+  // Animaciones interpoladas
+  const HEADER_MAX_HEIGHT = 200;
+  const HEADER_MIN_HEIGHT = 80;
+  const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
+
+  const headerHeight = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+    extrapolate: 'clamp',
+  });
+
+  const avatarSize = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [100, 40],
+    extrapolate: 'clamp',
+  });
+
+  const avatarBorderRadius = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [50, 20],
+    extrapolate: 'clamp',
+  });
+
+  const avatarIconSize = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [48, 24],
+    extrapolate: 'clamp',
+  });
+
+  const userAgeOpacity = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
+    outputRange: [1, 0.5, 0],
+    extrapolate: 'clamp',
+  });
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
 
-      {/* Hero Header with Gradient */}
-      <LinearGradient
-        colors={theme.gradient as any}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.heroHeader, { paddingTop: insets.top + 20 }]}
-      >
-        <View style={styles.heroContent}>
-          <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Ionicons name="person" size={48} color="#FFFFFF" />
+      {/* Hero Header with Gradient - Animado */}
+      <Animated.View style={{ height: headerHeight }}>
+        <LinearGradient
+          colors={theme.gradient as any}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.heroHeader, { paddingTop: insets.top + 20, height: '100%' }]}
+        >
+          <View style={styles.heroContent}>
+            <View style={styles.profileHeader}>
+              <View style={styles.avatarContainer}>
+                <Animated.View
+                  style={[
+                    styles.avatar,
+                    {
+                      width: avatarSize,
+                      height: avatarSize,
+                      borderRadius: avatarBorderRadius,
+                    },
+                  ]}
+                >
+                  <Animated.View>
+                    <Ionicons name="person" size={avatarIconSize as any} color="#FFFFFF" />
+                  </Animated.View>
+                </Animated.View>
               </View>
+              <Animated.View
+                style={{
+                  transform: [
+                    {
+                      scale: scrollY.interpolate({
+                        inputRange: [0, HEADER_SCROLL_DISTANCE],
+                        outputRange: [1, 0.64],
+                        extrapolate: 'clamp',
+                      }),
+                    },
+                  ],
+                }}
+              >
+                <Text style={styles.userName}>
+                  {user?.username || 'Usuario'}
+                </Text>
+              </Animated.View>
+              <Animated.View
+                style={{
+                  opacity: userAgeOpacity,
+                }}
+              >
+                <Text style={styles.userAge}>
+                  {user?.birthdate
+                    ? `${new Date().getFullYear() - new Date(user.birthdate).getFullYear()} años`
+                    : 'Edad no disponible'
+                  }
+                </Text>
+              </Animated.View>
             </View>
-            <Text style={styles.userName}>{user?.username || 'Usuario'}</Text>
-            <Text style={styles.userAge}>
-              {user?.birthdate
-                ? `${new Date().getFullYear() - new Date(user.birthdate).getFullYear()} años`
-                : 'Edad no disponible'
-              }
-            </Text>
           </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      </Animated.View>
 
       {/* Main Content */}
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
           <View style={[styles.statCard, { backgroundColor: theme.card }]}>
@@ -230,7 +295,6 @@ export default function ProfileScreen() {
           visible={showBookListModal}
           onClose={() => {
             setShowBookListModal(false);
-            setSelectedList('');
             setSelectedListData(null);
           }}
           listId={selectedListData.id}

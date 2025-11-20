@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   Image,
   ActivityIndicator,
@@ -88,18 +87,28 @@ export default function SearchResults({
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={results}
-        renderItem={renderBookItem}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.3}
-        ListFooterComponent={renderFooter}
-      />
+      <View style={styles.listContainer}>
+        {/* Renderizar libros en filas de 2 columnas */}
+        {results.reduce((rows: Book[][], item, index) => {
+          if (index % 2 === 0) {
+            rows.push([item]);
+          } else {
+            rows[rows.length - 1].push(item);
+          }
+          return rows;
+        }, []).map((row, rowIndex) => (
+          <View key={`row-${rowIndex}`} style={styles.row}>
+            {row.map((item) => (
+              <View key={item.id} style={{ width: '48%' }}>
+                {renderBookItem({ item })}
+              </View>
+            ))}
+            {/* Agregar espaciador si la fila tiene solo 1 elemento */}
+            {row.length === 1 && <View style={{ width: '48%' }} />}
+          </View>
+        ))}
+        {renderFooter()}
+      </View>
     </View>
   );
 }
