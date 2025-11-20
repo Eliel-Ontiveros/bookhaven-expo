@@ -77,9 +77,10 @@ class APIService {
       return fallbackUrls.split(',').map(url => url.trim());
     }
     return [
+      'http://10.41.8.255:3000', // IP Wi-Fi principal
       'http://localhost:3000',
       'http://10.0.2.2:3000', // Emulador Android
-      'http://192.168.1.69:3000', // IP de red local (ejemplo)
+      'http://192.168.56.1:3000', // VirtualBox (backup)
     ];
   }
 

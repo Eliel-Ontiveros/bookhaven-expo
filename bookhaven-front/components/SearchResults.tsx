@@ -99,12 +99,10 @@ export default function SearchResults({
         }, []).map((row, rowIndex) => (
           <View key={`row-${rowIndex}`} style={styles.row}>
             {row.map((item) => (
-              <View key={item.id} style={{ width: '48%' }}>
+              <View key={item.id} style={{ width: '45%' }}>
                 {renderBookItem({ item })}
               </View>
             ))}
-            {/* Agregar espaciador si la fila tiene solo 1 elemento */}
-            {row.length === 1 && <View style={{ width: '48%' }} />}
           </View>
         ))}
         {renderFooter()}
@@ -129,15 +127,17 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   row: {
-    justifyContent: 'space-between',
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginBottom: 15,
+    gap: 12,
   },
   bookCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 15,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: '#000',
-    padding: 15,
+    padding: 12,
     width: '48%',
     alignItems: 'center',
     shadowColor: '#000',
@@ -150,8 +150,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   bookCover: {
-    width: 80,
-    height: 100,
+    width: 100,
+    height: 140,
     marginBottom: 10,
     borderRadius: 8,
     overflow: 'hidden',
@@ -182,6 +182,7 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
     marginBottom: 4,
+    lineHeight: 16,
   },
   bookAuthor: {
     fontSize: 12,
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#888',
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: 13,
   },
   emptyContainer: {
     flex: 1,

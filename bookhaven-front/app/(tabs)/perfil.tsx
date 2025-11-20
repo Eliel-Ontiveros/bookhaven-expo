@@ -31,7 +31,6 @@ export default function ProfileScreen() {
   const theme = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
   
-  // Referencias para animaciones
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -41,21 +40,21 @@ export default function ProfileScreen() {
 
   const loadBookLists = async () => {
     try {
-      console.log('📚 Loading book lists...');
+      console.log('Loading book lists...');
       const listsResponse = await apiService.getBookLists();
-      console.log('📚 Book lists response:', listsResponse);
+      console.log('Book lists response:', listsResponse);
 
       if (listsResponse.success && listsResponse.data) {
         const bookListsData = Array.isArray(listsResponse.data) ? listsResponse.data : [];
         setBookLists(bookListsData);
-        console.log('✅ Book lists loaded:', bookListsData.length);
+        console.log('Book lists loaded:', bookListsData.length);
       } else {
-        console.log('❌ Failed to load book lists:', listsResponse.error);
-        setBookLists([]); // Asegurar que siempre sea un array
+        console.log('Failed to load book lists:', listsResponse.error);
+        setBookLists([]);
       }
     } catch (error) {
-      console.error('❌ Error loading book lists:', error);
-      setBookLists([]); // Asegurar que siempre sea un array
+      console.error('Error loading book lists:', error);
+      setBookLists([]); 
     }
     setLoading(false);
   };
@@ -73,8 +72,8 @@ export default function ProfileScreen() {
   }
 
   // Animaciones interpoladas
-  const HEADER_MAX_HEIGHT = 200;
-  const HEADER_MIN_HEIGHT = 80;
+  const HEADER_MAX_HEIGHT = 260;
+  const HEADER_MIN_HEIGHT = 75;
   const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
   const headerHeight = scrollY.interpolate({
@@ -95,81 +94,21 @@ export default function ProfileScreen() {
     extrapolate: 'clamp',
   });
 
-  const avatarIconSize = scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE],
-    outputRange: [48, 24],
+  const avatarOpacity = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE / 4],
+    outputRange: [1, 0],
     extrapolate: 'clamp',
   });
 
-  const userAgeOpacity = scrollY.interpolate({
-    inputRange: [0, HEADER_SCROLL_DISTANCE / 2, HEADER_SCROLL_DISTANCE],
-    outputRange: [1, 0.5, 0],
+  const ageOpacity = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE / 3],
+    outputRange: [1, 0],
     extrapolate: 'clamp',
   });
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-
-      {/* Hero Header with Gradient - Animado */}
-      <Animated.View style={{ height: headerHeight }}>
-        <LinearGradient
-          colors={theme.gradient as any}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.heroHeader, { paddingTop: insets.top + 20, height: '100%' }]}
-        >
-          <View style={styles.heroContent}>
-            <View style={styles.profileHeader}>
-              <View style={styles.avatarContainer}>
-                <Animated.View
-                  style={[
-                    styles.avatar,
-                    {
-                      width: avatarSize,
-                      height: avatarSize,
-                      borderRadius: avatarBorderRadius,
-                    },
-                  ]}
-                >
-                  <Animated.View>
-                    <Ionicons name="person" size={avatarIconSize as any} color="#FFFFFF" />
-                  </Animated.View>
-                </Animated.View>
-              </View>
-              <Animated.View
-                style={{
-                  transform: [
-                    {
-                      scale: scrollY.interpolate({
-                        inputRange: [0, HEADER_SCROLL_DISTANCE],
-                        outputRange: [1, 0.64],
-                        extrapolate: 'clamp',
-                      }),
-                    },
-                  ],
-                }}
-              >
-                <Text style={styles.userName}>
-                  {user?.username || 'Usuario'}
-                </Text>
-              </Animated.View>
-              <Animated.View
-                style={{
-                  opacity: userAgeOpacity,
-                }}
-              >
-                <Text style={styles.userAge}>
-                  {user?.birthdate
-                    ? `${new Date().getFullYear() - new Date(user.birthdate).getFullYear()} años`
-                    : 'Edad no disponible'
-                  }
-                </Text>
-              </Animated.View>
-            </View>
-          </View>
-        </LinearGradient>
-      </Animated.View>
 
       {/* Main Content */}
       <ScrollView
@@ -183,6 +122,9 @@ export default function ProfileScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
+        {/* Spacer for header */}
+        <View style={{ height: HEADER_MAX_HEIGHT }} />
+
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
           <View style={[styles.statCard, { backgroundColor: theme.card }]}>
@@ -283,6 +225,89 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </ScrollView>
 
+      {/* Animated Header - positioned absolutely */}
+      <Animated.View style={[styles.header, { height: headerHeight }]}>
+        <Animated.View style={{ flex: 1 }}>
+          <LinearGradient
+            colors={theme.gradient as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.heroHeader, { flex: 1 }]}
+          >
+            <View style={styles.heroContent}>
+              <View style={styles.profileHeader}>
+                <Animated.View 
+                  style={[
+                    styles.avatarContainer,
+                    {
+                      opacity: avatarOpacity,
+                    }
+                  ]}
+                >
+                  <Animated.View
+                    style={[
+                      styles.avatar,
+                      {
+                        width: avatarSize,
+                        height: avatarSize,
+                        borderRadius: avatarBorderRadius,
+                      },
+                    ]}
+                  >
+                    <Animated.View
+                      style={{
+                        transform: [
+                          {
+                            scale: scrollY.interpolate({
+                              inputRange: [0, HEADER_SCROLL_DISTANCE],
+                              outputRange: [1, 0.5],
+                              extrapolate: 'clamp',
+                            }),
+                          },
+                        ],
+                      }}
+                    >
+                      <Ionicons name="person" size={48} color="#FFFFFF" />
+                    </Animated.View>
+                  </Animated.View>
+                </Animated.View>
+
+                <Animated.View
+                  style={{
+                    transform: [
+                      {
+                        scale: scrollY.interpolate({
+                          inputRange: [0, HEADER_SCROLL_DISTANCE],
+                          outputRange: [1, 0.8],
+                          extrapolate: 'clamp',
+                        }),
+                      },
+                    ],
+                  }}
+                >
+                  <Text style={styles.userName}>
+                    {user?.username || 'Usuario'}
+                  </Text>
+                </Animated.View>
+                
+                <Animated.View
+                  style={{
+                    opacity: ageOpacity,
+                  }}
+                >
+                  <Text style={styles.userAge}>
+                    {user?.birthdate
+                      ? `${new Date().getFullYear() - new Date(user.birthdate).getFullYear()} años`
+                      : 'Edad no disponible'
+                    }
+                  </Text>
+                </Animated.View>
+              </View>
+            </View>
+          </LinearGradient>
+        </Animated.View>
+      </Animated.View>
+
       {/* Modals */}
       <CreateListModal
         visible={showCreateModal}
@@ -309,6 +334,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    zIndex: 10,
+  },
   heroHeader: {
     paddingHorizontal: 20,
     paddingBottom: 40,
@@ -317,10 +352,14 @@ const styles = StyleSheet.create({
   },
   heroContent: {
     alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   profileHeader: {
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 12,
+    flex: 1,
   },
   avatarContainer: {
     marginBottom: 8,
