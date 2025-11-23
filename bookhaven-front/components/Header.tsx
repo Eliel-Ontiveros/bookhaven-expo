@@ -17,24 +17,6 @@ export default function Header() {
   const theme = Colors[colorScheme ?? 'light'];
   const pathname = usePathname();
 
-  const getNavButtonStyle = (route: string) => {
-    const isActive = pathname === route;
-    return [
-      styles.navButton,
-      isActive && styles.navButtonActive,
-      { backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent' }
-    ];
-  };
-
-  const getNavTextStyle = (route: string) => {
-    const isActive = pathname === route;
-    return [
-      styles.navText,
-      isActive && styles.navTextActive,
-      { color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.8)' }
-    ];
-  };
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <LinearGradient
@@ -57,19 +39,24 @@ export default function Header() {
         {/* Navegación */}
         <View style={styles.navContainer}>
           <TouchableOpacity
-            style={getNavButtonStyle('/recomendaciones')}
+            style={styles.iconButton}
             onPress={() => router.push('/recomendaciones')}
           >
-            <Ionicons name="star" size={18} color="rgba(255, 255, 255, 0.9)" />
-            <Text style={getNavTextStyle('/recomendaciones')}>Recomendaciones</Text>
+            <Ionicons name="star" size={20} color="rgba(255, 255, 255, 0.9)" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={getNavButtonStyle('/perfil')}
+            style={styles.iconButton}
+            onPress={() => router.push('/chat')}
+          >
+            <Ionicons name="chatbubbles" size={20} color="rgba(255, 255, 255, 0.9)" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.iconButton}
             onPress={() => router.push('/perfil')}
           >
-            <Ionicons name="person" size={18} color="rgba(255, 255, 255, 0.9)" />
-            <Text style={getNavTextStyle('/perfil')}>Perfil</Text>
+            <Ionicons name="person" size={20} color="rgba(255, 255, 255, 0.9)" />
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -123,35 +110,13 @@ const styles = StyleSheet.create({
   navContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
-  navButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 22,
-    gap: 6,
-    minWidth: 80,
+  iconButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
-  },
-  navButtonActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  navText: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  navTextActive: {
-    fontWeight: 'bold',
+    alignItems: 'center',
   },
 });

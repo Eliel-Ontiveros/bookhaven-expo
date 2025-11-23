@@ -14,18 +14,18 @@ const getBaseUrl = (): string => {
   if (__DEV__) {
     // En desarrollo, detectar la mejor URL según la plataforma
     if (Platform.OS === 'web') {
-      return 'http://localhost:3000';
+      return 'http://localhost:3001';
     } else if (Platform.OS === 'android') {
       // Para emulador Android, usar 10.0.2.2
       // Para dispositivo físico, usar la IP de la red
-      return 'http://10.0.2.2:3000';
+      return 'http://10.0.2.2:3001';
     } else if (Platform.OS === 'ios') {
       // Para iOS usar localhost en simulador, IP de red en dispositivo físico
-      return 'http://localhost:3000';
+      return 'http://localhost:3001';
     }
 
     // Por defecto, usar localhost
-    return 'http://localhost:3000';
+    return 'http://localhost:3001';
   }
 
   // En producción, usar la URL configurada o por defecto
@@ -35,7 +35,7 @@ const getBaseUrl = (): string => {
 // API configuration
 export const API_CONFIG = {
   BASE_URL: getBaseUrl(),
-  TIMEOUT: parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT || '10000'),
+  TIMEOUT: parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT || '30000'),
   DEBUG: process.env.EXPO_PUBLIC_API_DEBUG === 'true',
   ENDPOINTS: {
     // Auth
@@ -62,6 +62,11 @@ export const API_CONFIG = {
     // User/Profile
     USER_PROFILE: '/api/users/profile',
     USER_RECOMMENDATIONS: '/api/users/recommendations',
+
+    // Chat
+    CHAT_CONVERSATIONS: '/api/chat/conversations',
+    CHAT_MESSAGES: '/api/chat/conversations',
+    CHAT_USER_SEARCH: '/api/chat/users/search',
   },
   HEADERS: {
     'Content-Type': 'application/json',

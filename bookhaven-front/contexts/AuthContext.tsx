@@ -6,6 +6,7 @@ import { User } from '@/lib/api/types';
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   loading: boolean;
   isAuthenticated: boolean;
@@ -24,6 +25,9 @@ interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Export the context for potential direct usage
+export { AuthContext };
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -38,6 +42,7 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -47,24 +52,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const checkAuthStatus = async () => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      console.log('🔍 Checking token:', token ? 'exists' : 'not found');
-      
-      if (token) {
+      const savedToken = await AsyncStorage.getItem('authToken');
+      console.log('🔍 Checking token:', savedToken ? 'exists' : 'not found');
+
+      if (savedToken) {
+        setToken(savedToken);
         const response = await apiService.getCurrentUser();
         console.log('👤 User check response:', response);
-        
+
         if (response.success && response.data) {
           setUser(response.data);
           console.log('✅ User authenticated:', response.data.username);
         } else {
           console.log('❌ Token invalid, removing...');
           await AsyncStorage.removeItem('authToken');
+          setToken(null);
         }
       }
     } catch (error) {
       console.error('❌ Error checking auth status:', error);
       await AsyncStorage.removeItem('authToken');
+      setToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -74,20 +82,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setLoading(true);
     try {
       console.log('🔐 Attempting login for:', email);
-      
+
       const response = await apiService.login({ email, password });
       console.log('🔐 Login response:', response);
-      
+
       if (response.success && response.data) {
         console.log('✅ Login successful, saving token...');
         console.log('🔑 Token received:', response.data.token ? 'YES' : 'NO');
         console.log('👤 User data:', response.data.user);
-        
+
         if (!response.data.token) {
           throw new Error('No se recibió el token de autenticación');
         }
-        
+
         await AsyncStorage.setItem('authToken', response.data.token);
+        setToken(response.data.token);
         setUser(response.data.user);
         console.log('👤 User logged in:', response.data.user.username);
       } else {
@@ -105,20 +114,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setLoading(true);
     try {
       console.log('📝 Attempting registration for:', userData.email);
-      
+
       const response = await apiService.register(userData);
       console.log('📝 Register response:', response);
-      
+
       if (response.success && response.data) {
         console.log('✅ Registration successful, saving token...');
         console.log('🔑 Token received:', response.data.token ? 'YES' : 'NO');
         console.log('👤 User data:', response.data.user);
-        
+
         if (!response.data.token) {
           throw new Error('No se recibió el token de autenticación');
         }
-        
+
         await AsyncStorage.setItem('authToken', response.data.token);
+        setToken(response.data.token);
         setUser(response.data.user);
         console.log('👤 User registered:', response.data.user.username);
       } else {
@@ -137,8 +147,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log('🚪 Logging out user...');
       await AsyncStorage.removeItem('authToken');
       setUser(null);
+      setToken(null);
       console.log('✅ Logout successful');
-      
+
       // Redirigir al login después del logout
       console.log('🚀 Redirecting to login...');
       router.replace('/login');
@@ -149,6 +160,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const value: AuthContextType = {
     user,
+    token,
     isLoading,
     loading: isLoading,
     isAuthenticated: !!user,

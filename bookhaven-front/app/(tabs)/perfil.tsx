@@ -195,6 +195,18 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Test Chat Button */}
+        <TouchableOpacity
+          style={[styles.testButton, { backgroundColor: theme.tint }]}
+          onPress={() => {
+            const router = require('expo-router').router;
+            router.push('/test-chat');
+          }}
+        >
+          <Ionicons name="bug-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.testButtonText}>Probar Chat APIs</Text>
+        </TouchableOpacity>
+
         {/* Logout Button */}
         <TouchableOpacity
           style={[styles.logoutButton, { backgroundColor: theme.error }]}
@@ -390,6 +402,25 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 16,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: 20,
+  },
+  testButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   logoutButton: {
     flexDirection: 'row',

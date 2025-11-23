@@ -46,7 +46,7 @@ class APIService {
         console.log(`🔄 Probando: ${baseUrl}`);
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout corto para las pruebas
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout más largo para las pruebas
 
         const response = await fetch(`${baseUrl}/api`, {
           method: 'GET',
@@ -62,7 +62,11 @@ class APIService {
           return baseUrl;
         }
       } catch (error) {
-        console.log(`❌ Falló: ${baseUrl} - ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log(`⏰ Timeout: ${baseUrl} - No respondió en 10 segundos`);
+        } else {
+          console.log(`❌ Falló: ${baseUrl} - ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        }
       }
     }
 
@@ -85,14 +89,15 @@ class APIService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retryCount: number = 0
   ): Promise<APIResponse<T>> {
     // Auto-detectar la mejor URL disponible
     const baseUrl = await this.findWorkingUrl();
     const url = `${baseUrl}${endpoint}`;
 
     if (API_CONFIG.DEBUG) {
-      console.log('🔄 API Request:', url);
+      console.log('🔄 API Request:', url, retryCount > 0 ? `(intento ${retryCount + 1}/3)` : '');
       console.log('📋 Request Options:', {
         method: options.method || 'GET',
         headers: options.headers,
@@ -102,7 +107,10 @@ class APIService {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+      const timeoutId = setTimeout(() => {
+        console.log(`⏰ Timeout después de ${API_CONFIG.TIMEOUT}ms para: ${url}`);
+        controller.abort();
+      }, API_CONFIG.TIMEOUT);
 
       const response = await fetch(url, {
         ...options,
@@ -124,19 +132,29 @@ class APIService {
 
 
       if (API_CONFIG.DEBUG) {
+        // Log detallado de la estructura de respuesta para debugging
+        console.log('📦 Raw Response Data:', {
+          dataExists: !!data,
+          dataType: typeof data,
+          dataKeys: data ? Object.keys(data) : [],
+          hasSuccess: 'success' in (data || {}),
+          successValue: data?.success,
+          hasData: 'data' in (data || {}),
+          dataValue: data?.data ? typeof data.data : 'undefined',
+          fullStructure: JSON.stringify(data).slice(0, 200) + '...'
+        });
+
         // Mostrar datos específicos según el endpoint
-        if (endpoint.includes('/books/search') && data?.data?.data) {
-          console.log('📦 Books Search Response:', {
-            totalBooks: data.data.data.length,
-            firstBook: data.data.data[0] ? {
-              id: data.data.data[0].id,
-              title: data.data.data[0].title,
-              authors: data.data.data[0].authors
-            } : 'No books found',
-            pagination: data.data.pagination
+        if (endpoint.includes('/books/search')) {
+          console.log('📦 Books Search Response Analysis:', {
+            hasDataProp: !!data?.data,
+            dataType: typeof data?.data,
+            isArray: Array.isArray(data?.data),
+            hasPagination: !!(data?.data?.data),
+            paginationStructure: data?.data?.pagination ? 'present' : 'missing',
+            itemCount: Array.isArray(data?.data) ? data.data.length :
+              Array.isArray(data?.data?.data) ? data.data.data.length : 'N/A'
           });
-        } else {
-          console.log('📦 Response Data:', data);
         }
       }      // Verificar si la respuesta es exitosa (status 200-299)
       if (response.ok) {
@@ -164,8 +182,21 @@ class APIService {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           errorMessage = 'Timeout: La petición tardó demasiado en responder';
+
+          // Retry hasta 2 veces en caso de timeout
+          if (retryCount < 2) {
+            console.log(`🔄 Reintentando request (intento ${retryCount + 1}/2)...`);
+            // Reset de URL funcional para forzar re-detección
+            this.workingBaseUrl = null;
+            // Esperar un poco antes del retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return this.request<T>(endpoint, options, retryCount + 1);
+          }
         } else if (error.message.includes('Network request failed')) {
           errorMessage = 'Error de red: No se puede conectar al servidor. Verifica que el backend esté ejecutándose.';
+
+          // Reset de URL funcional para próximo intento
+          this.workingBaseUrl = null;
         } else {
           errorMessage = error.message;
         }
@@ -189,7 +220,7 @@ class APIService {
         ...headers,
         ...options.headers,
       },
-    });
+    }, 0);
   }
 
   // Auth methods
@@ -246,11 +277,11 @@ class APIService {
     const queryString = queryParams.toString();
     const endpoint = `${API_CONFIG.ENDPOINTS.BOOKS_SEARCH}${queryString ? `?${queryString}` : ''}`;
 
-    return this.request<Book[]>(endpoint);
+    return this.request<Book[]>(endpoint, {}, 0);
   }
 
   async getBookById(bookId: string): Promise<APIResponse<Book>> {
-    return this.request<Book>(`${API_CONFIG.ENDPOINTS.BOOK_DETAIL}/${bookId}`);
+    return this.request<Book>(`${API_CONFIG.ENDPOINTS.BOOK_DETAIL}/${bookId}`, {}, 0);
   }
 
   // Book Lists methods
@@ -293,7 +324,7 @@ class APIService {
 
   // Comments methods
   async getBookComments(bookId: string): Promise<APIResponse<Comment[]>> {
-    return this.request<Comment[]>(`${API_CONFIG.ENDPOINTS.COMMENTS}?bookId=${bookId}`);
+    return this.request<Comment[]>(`${API_CONFIG.ENDPOINTS.COMMENTS}?bookId=${bookId}`, {}, 0);
   }
 
   async createComment(data: CreateCommentRequest): Promise<APIResponse<Comment>> {
@@ -322,7 +353,7 @@ class APIService {
     if (userId) {
       endpoint += `&userId=${userId}`;
     }
-    return this.request<BookRating[]>(endpoint);
+    return this.request<BookRating[]>(endpoint, {}, 0);
   }
 
   async createOrUpdateRating(data: CreateRatingRequest): Promise<APIResponse<BookRating>> {
@@ -354,7 +385,7 @@ class APIService {
     const headers = await this.getAuthHeader();
     return this.request<Book[]>(API_CONFIG.ENDPOINTS.USER_RECOMMENDATIONS, {
       headers,
-    });
+    }, 0);
   }
 
   // Advanced search methods
@@ -434,7 +465,7 @@ class APIService {
     if (userId) {
       endpoint += `&userId=${userId}`;
     }
-    return this.request(endpoint);
+    return this.request(endpoint, {}, 0);
   }
 
   async createPost(postData: {
@@ -452,7 +483,7 @@ class APIService {
   }
 
   async getPost(postId: number): Promise<APIResponse<any>> {
-    return this.request(`/api/posts/${postId}`);
+    return this.request(`/api/posts/${postId}`, {}, 0);
   }
 
   async updatePost(postId: number, postData: {
@@ -476,7 +507,7 @@ class APIService {
 
   // Post Comments methods
   async getPostComments(postId: number): Promise<APIResponse<any[]>> {
-    return this.request(`/api/posts/${postId}/comments`);
+    return this.request(`/api/posts/${postId}/comments`, {}, 0);
   }
 
   async createPostComment(commentData: {

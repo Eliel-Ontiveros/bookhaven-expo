@@ -11,8 +11,22 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
 
-  // Configuración para optimizar builds de API
+  // Configuración para optimizar builds de API y Socket.IO
   serverExternalPackages: ['@prisma/client'],
+  experimental: {
+    serverComponentsExternalPackages: ["socket.io"]
+  },
+
+  // Webpack config para Socket.IO
+  webpack: (config: any) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    };
+    return config;
+  },
 
   // Headers de seguridad para API
   async headers() {
