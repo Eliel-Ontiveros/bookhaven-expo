@@ -25,12 +25,16 @@ import { Book } from '../lib/api/types';
 import { Colors } from '../constants/theme';
 import { useColorScheme } from '../hooks/use-color-scheme';
 import Header from './Header';
+import VoiceRecorder from './VoiceRecorder';
+import VoicePlayer from './VoicePlayer';
+import { VoiceNoteService } from '../lib/api/voiceNotes';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ChatScreenProps {
     conversationId: string;
     conversationName: string;
     currentUserId: string;
-    onSendMessage: (content: string, messageType?: 'TEXT' | 'IMAGE' | 'BOOK_RECOMMENDATION') => Promise<void>;
+    onSendMessage: (content: string, messageType?: 'TEXT' | 'IMAGE' | 'BOOK_RECOMMENDATION' | 'VOICE_NOTE') => Promise<void>;
     messages: Message[];
     loading?: boolean;
     onTypingStart?: () => void;
@@ -62,6 +66,7 @@ export default function ChatScreen({
     const [inputText, setInputText] = useState('');
     const [sending, setSending] = useState(false);
     const [showBookSelector, setShowBookSelector] = useState(false);
+    const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
     const flatListRef = useRef<FlatList>(null);
     const typingTimeoutRef = useRef<any>(null);
 
@@ -150,6 +155,62 @@ export default function ChatScreen({
         setShowBookSelector(true);
     };
 
+    const handleVoiceRecording = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setShowVoiceRecorder(true);
+    };
+
+    const handleVoiceRecordingComplete = async (audioUri: string, duration: number) => {
+        setShowVoiceRecorder(false);
+        setSending(true);
+
+        try {
+            // Haptic feedback para indicar inicio de subida
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+            const token = await AsyncStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No hay token de autenticación');
+            }
+
+            // Generar nombre único para el archivo
+            const fileName = `voice-note-${Date.now()}.m4a`;
+
+            console.log('🎙️ Subiendo nota de voz:', { fileName, duration });
+
+            // Subir nota de voz a S3
+            const uploadResult = await VoiceNoteService.uploadVoiceNote(audioUri, fileName, token);
+
+            console.log('✅ Nota de voz subida:', uploadResult);
+
+            // Enviar mensaje de voz
+            await VoiceNoteService.sendVoiceMessage(
+                conversationId,
+                uploadResult.s3Key,
+                duration,
+                uploadResult.size,
+                token
+            );
+
+            // Haptic feedback de éxito
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        } catch (error) {
+            console.error('Error enviando nota de voz:', error);
+            Alert.alert('Error', 'No se pudo enviar la nota de voz');
+
+            // Haptic feedback de error
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const handleVoiceRecordingCancel = () => {
+        setShowVoiceRecorder(false);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    };
+
     const handleViewUserProfile = () => {
         if (otherParticipant) {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -185,6 +246,24 @@ export default function ChatScreen({
             (!previousMessage || previousMessage.senderId !== item.senderId);
 
         const renderMessageContent = () => {
+            if (item.messageType === 'VOICE_NOTE') {
+                console.log('🎵 Rendering voice note:', {
+                    audioUrl: item.audioUrl,
+                    audioDuration: item.audioDuration,
+                    audioSize: item.audioSize,
+                    messageContent: item.content
+                });
+
+                return (
+                    <VoicePlayer
+                        audioUrl={item.audioUrl || ''}
+                        audioDuration={item.audioDuration || 0}
+                        audioSize={item.audioSize}
+                        isOwnMessage={isOwnMessage}
+                    />
+                );
+            }
+
             if (item.messageType === 'BOOK_RECOMMENDATION') {
                 try {
                     const bookData = JSON.parse(item.content);
@@ -316,7 +395,8 @@ export default function ChatScreen({
                 <View style={[
                     styles.messageBubble,
                     isOwnMessage ? styles.ownMessageBubble : styles.otherMessageBubble,
-                    item.messageType === 'BOOK_RECOMMENDATION' && styles.bookMessageBubble
+                    item.messageType === 'BOOK_RECOMMENDATION' && styles.bookMessageBubble,
+                    item.messageType === 'VOICE_NOTE' && styles.voiceMessageBubble
                 ]}>
                     {renderMessageContent()}
                     <Text style={[
@@ -427,6 +507,17 @@ export default function ChatScreen({
                         />
                     </TouchableOpacity>
                     <TouchableOpacity
+                        style={styles.voiceButton}
+                        onPress={handleVoiceRecording}
+                        disabled={sending}
+                    >
+                        <Ionicons
+                            name="mic"
+                            size={20}
+                            color="#ffffff"
+                        />
+                    </TouchableOpacity>
+                    <TouchableOpacity
                         style={[
                             styles.sendButton,
                             { opacity: (inputText.trim() === '' || sending) ? 0.5 : 1 }
@@ -448,6 +539,19 @@ export default function ChatScreen({
                     onClose={() => setShowBookSelector(false)}
                     onBookSelect={handleBookSelect}
                 />
+
+                {/* Modal de grabación de voz */}
+                {showVoiceRecorder && (
+                    <View style={styles.voiceRecorderOverlay}>
+                        <View style={styles.voiceRecorderContainer}>
+                            <VoiceRecorder
+                                onRecordingComplete={handleVoiceRecordingComplete}
+                                onCancel={handleVoiceRecordingCancel}
+                                disabled={sending}
+                            />
+                        </View>
+                    </View>
+                )}
             </KeyboardAvoidingView>
         </View>
     );
@@ -601,7 +705,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginRight: 8,
     },
+    voiceButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#FF6B6B', // Rojo suave para notas de voz
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
     bookMessageBubble: {
+        padding: 0,
+        overflow: 'hidden',
+    },
+    voiceMessageBubble: {
         padding: 0,
         overflow: 'hidden',
     },
@@ -664,5 +781,30 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginLeft: 4,
         fontWeight: '500',
+    },
+    voiceRecorderOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+    },
+    voiceRecorderContainer: {
+        backgroundColor: '#ffffff',
+        borderRadius: 20,
+        padding: 20,
+        margin: 20,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
 });

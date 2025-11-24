@@ -156,6 +156,12 @@ model Message {
   updatedAt      DateTime     @updatedAt
   messageType    MessageType  @default(TEXT)
   
+  // Campos para notas de voz
+  audioUrl       String?      // URL del archivo de audio en S3
+  audioDuration  Int?         // Duración en segundos
+  audioSize      Int?         // Tamaño del archivo en bytes
+  transcription  String?      // Transcripción opcional del audio
+  
   sender         User         @relation(fields: [senderId], references: [id])
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }
@@ -164,4 +170,5 @@ enum MessageType {
   TEXT
   IMAGE
   BOOK_RECOMMENDATION
+  VOICE_NOTE
 }

@@ -20,11 +20,17 @@ export interface Conversation {
 export interface Message {
     id: string;
     content: string;
-    messageType: 'TEXT' | 'IMAGE' | 'BOOK_RECOMMENDATION';
+    messageType: 'TEXT' | 'IMAGE' | 'BOOK_RECOMMENDATION' | 'VOICE_NOTE';
     senderId: string;
     conversationId: string;
     createdAt: string;
     sender: ChatUser;
+
+    // Campos para notas de voz
+    audioUrl?: string;
+    audioDuration?: number;
+    audioSize?: number;
+    transcription?: string;
 }
 
 export interface ConversationInfo {
@@ -247,7 +253,12 @@ export class ChatService {
                         username: msg.sender?.username || 'Usuario desconocido',
                         email: msg.sender?.email || '',
                         avatarUrl: msg.sender?.avatarUrl || null
-                    }
+                    },
+                    // Campos específicos para notas de voz
+                    audioUrl: msg.audioUrl || undefined,
+                    audioDuration: msg.audioDuration || undefined,
+                    audioSize: msg.audioSize || undefined,
+                    transcription: msg.transcription || undefined
                 }));
 
             console.log('🔄 Converted messages:', messages);
@@ -295,7 +306,12 @@ export class ChatService {
                     username: rawMessage.sender?.username || 'Tu',
                     email: rawMessage.sender?.email || '',
                     avatarUrl: rawMessage.sender?.avatarUrl || null
-                }
+                },
+                // Campos específicos para notas de voz
+                audioUrl: rawMessage.audioUrl || undefined,
+                audioDuration: rawMessage.audioDuration || undefined,
+                audioSize: rawMessage.audioSize || undefined,
+                transcription: rawMessage.transcription || undefined
             };
 
             console.log('🔄 Converted message:', message);

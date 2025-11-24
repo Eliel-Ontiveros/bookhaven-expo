@@ -67,6 +67,10 @@ export const API_CONFIG = {
     CHAT_CONVERSATIONS: '/api/chat/conversations',
     CHAT_MESSAGES: '/api/chat/conversations',
     CHAT_USER_SEARCH: '/api/chat/users/search',
+
+    // Voice Notes
+    UPLOAD_VOICE: '/api/upload/voice',
+    VOICE_NOTES: '/api/voice-notes',
   },
   HEADERS: {
     'Content-Type': 'application/json',

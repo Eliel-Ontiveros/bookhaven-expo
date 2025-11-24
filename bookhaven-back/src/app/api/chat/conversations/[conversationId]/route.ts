@@ -101,7 +101,14 @@ export async function POST(
         const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
         const resolvedParams = await params;
         const conversationId = parseInt(resolvedParams.conversationId);
-        const { content, messageType = 'TEXT' } = await request.json();
+        const {
+            content,
+            messageType = 'TEXT',
+            audioUrl,
+            audioDuration,
+            audioSize,
+            transcription
+        } = await request.json();
 
         if (!content || content.trim() === '') {
             return NextResponse.json({ error: 'El contenido del mensaje es requerido' }, { status: 400 });
@@ -121,14 +128,24 @@ export async function POST(
             return NextResponse.json({ error: 'No tienes acceso a esta conversación' }, { status: 403 });
         }
 
-        // Crear el mensaje
+        // Crear el mensaje con campos opcionales para notas de voz
+        const messageData: any = {
+            content: content.trim(),
+            senderId: decoded.userId,
+            conversationId: conversationId,
+            messageType: (messageType as MessageType) || MessageType.TEXT
+        };
+
+        // Agregar campos de audio si es una nota de voz
+        if (messageType === 'VOICE_NOTE') {
+            if (audioUrl) messageData.audioUrl = audioUrl;
+            if (audioDuration) messageData.audioDuration = parseInt(audioDuration);
+            if (audioSize) messageData.audioSize = parseInt(audioSize);
+            if (transcription) messageData.transcription = transcription;
+        }
+
         const message = await prisma.message.create({
-            data: {
-                content: content.trim(),
-                senderId: decoded.userId,
-                conversationId: conversationId,
-                messageType: (messageType as MessageType) || MessageType.TEXT
-            },
+            data: messageData,
             include: {
                 sender: {
                     select: {

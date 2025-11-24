@@ -46,6 +46,20 @@ export interface BookListEntry {
   book: Book;
 }
 
+// Voice Note Types
+export interface VoiceNote {
+  s3Key: string;
+  duration: number;
+  size: number;
+  url?: string; // URL firmada para reproducción
+}
+
+export interface UploadVoiceNoteResponse {
+  s3Key: string;
+  duration: number;
+  size: number;
+}
+
 export interface BookRating {
   id: number;
   rating: number;
