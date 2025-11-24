@@ -18,7 +18,6 @@ import CreateListModal from '@/components/CreateListModal';
 import BookListModal from '@/components/BookListModal';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -29,7 +28,6 @@ export default function ProfileScreen() {
   const [selectedListData, setSelectedListData] = useState<{ id: number; name: string } | null>(null);
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
-  const insets = useSafeAreaInsets();
   
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);

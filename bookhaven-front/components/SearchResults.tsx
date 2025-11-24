@@ -7,7 +7,6 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
 import { Book } from '@/lib/api/types';
 
 interface SearchResultsProps {
@@ -30,10 +29,6 @@ export default function SearchResults({
       style={styles.bookCard}
       onPress={() => {
         onBookPress(item);
-        router.push({
-          pathname: '/book-detail',
-          params: { book: JSON.stringify(item) }
-        });
       }}
     >
       <View style={styles.bookCover}>
@@ -99,9 +94,9 @@ export default function SearchResults({
         }, []).map((row, rowIndex) => (
           <View key={`row-${rowIndex}`} style={styles.row}>
             {row.map((item) => (
-              <View key={item.id} style={{ width: '45%' }}>
+              <React.Fragment key={item.id}>
                 {renderBookItem({ item })}
-              </View>
+              </React.Fragment>
             ))}
           </View>
         ))}
@@ -125,6 +120,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingBottom: 20,
+    alignItems: 'center',
   },
   row: {
     flexDirection: 'row',
@@ -138,7 +134,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#000',
     padding: 12,
-    width: '48%',
+    width: '42%',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
