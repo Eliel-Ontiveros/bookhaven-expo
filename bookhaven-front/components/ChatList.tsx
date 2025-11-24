@@ -15,6 +15,7 @@ interface ChatListProps {
     conversations: Conversation[];
     onConversationPress: (conversation: Conversation) => void;
     loading?: boolean;
+    refreshing?: boolean;
     currentUserId: string;
 }
 
@@ -22,17 +23,10 @@ export default function ChatList({
     conversations,
     onConversationPress,
     loading = false,
+    refreshing = false,
     currentUserId
 }: ChatListProps) {
     const getConversationName = (conversation: Conversation) => {
-        console.log('🔍 getConversationName - Conversation:', {
-            id: conversation.id,
-            name: conversation.name,
-            isGroup: conversation.isGroup,
-            participants: conversation.participants,
-            currentUserId
-        });
-
         if (conversation.isGroup) {
             return conversation.name || 'Chat grupal';
         }
@@ -42,14 +36,22 @@ export default function ChatList({
             p => p.id !== currentUserId
         );
 
-        console.log('👤 Other user found:', otherUser);
-        const name = otherUser?.username || conversation.name || 'Usuario';
-        console.log('📝 Final conversation name:', name);
-
-        return name;
+        return otherUser?.username || conversation.name || 'Usuario';
     };
 
-    const formatLastMessageTime = (dateString?: string) => {
+    const formatLastMessageContent = (lastMessage: any) => {
+        if (!lastMessage) return 'No hay mensajes';
+
+        if (lastMessage.messageType === 'BOOK_RECOMMENDATION') {
+            return '📖 Libro compartido';
+        }
+
+        if (lastMessage.messageType === 'IMAGE') {
+            return '📷 Imagen';
+        }
+
+        return lastMessage.content;
+    }; const formatLastMessageTime = (dateString?: string) => {
         if (!dateString) return '';
 
         const date = new Date(dateString);
@@ -94,7 +96,7 @@ export default function ChatList({
 
                     <View style={styles.lastMessageContainer}>
                         <Text style={styles.lastMessage} numberOfLines={1}>
-                            {item.lastMessage?.content || 'No hay mensajes'}
+                            {formatLastMessageContent(item.lastMessage)}
                         </Text>
                     </View>
                 </View>
@@ -123,13 +125,21 @@ export default function ChatList({
     }
 
     return (
-        <FlatList
-            data={conversations}
-            renderItem={renderConversationItem}
-            keyExtractor={(item, index) => item?.id || `conversation-${index}`}
-            style={styles.container}
-            showsVerticalScrollIndicator={false}
-        />
+        <View style={styles.container}>
+            {refreshing && (
+                <View style={styles.refreshingContainer}>
+                    <ActivityIndicator size="small" color="#007AFF" />
+                    <Text style={styles.refreshingText}>Actualizando...</Text>
+                </View>
+            )}
+            <FlatList
+                data={conversations}
+                renderItem={renderConversationItem}
+                keyExtractor={(item, index) => item?.id || `conversation-${index}`}
+                style={styles.listContainer}
+                showsVerticalScrollIndicator={false}
+            />
+        </View>
     );
 }
 
@@ -166,7 +176,24 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666666',
         textAlign: 'center',
-        lineHeight: 22,
+        lineHeight: 24,
+    },
+    refreshingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
+        backgroundColor: '#f8f9fa',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e9ecef',
+    },
+    refreshingText: {
+        marginLeft: 8,
+        fontSize: 14,
+        color: '#007AFF',
+    },
+    listContainer: {
+        flex: 1,
     },
     conversationItem: {
         flexDirection: 'row',

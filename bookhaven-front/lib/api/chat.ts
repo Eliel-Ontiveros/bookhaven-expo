@@ -27,6 +27,25 @@ export interface Message {
     sender: ChatUser;
 }
 
+export interface ConversationInfo {
+    id: number;
+    name?: string;
+    isGroup: boolean;
+    createdAt: string;
+    participants: Array<{
+        id: number;
+        username: string;
+        bio?: string;
+        joinedAt: string;
+        isCurrentUser: boolean;
+    }>;
+    otherParticipant?: {
+        id: number;
+        username: string;
+        bio?: string;
+    } | null;
+}
+
 export class ChatService {
     private static getAuthHeaders(token: string) {
         return {
@@ -283,6 +302,39 @@ export class ChatService {
             return message;
         } catch (error) {
             console.error('❌ ChatService.sendMessage - Error:', error);
+            throw error;
+        }
+    }
+
+    static async getConversationInfo(conversationId: string, token: string): Promise<ConversationInfo> {
+        try {
+            console.log('ℹ️ ChatService.getConversationInfo - ConversationId:', conversationId);
+            console.log('ℹ️ ChatService.getConversationInfo - Token:', token ? 'Present' : 'Missing');
+
+            const url = `${API_CONFIG.BASE_URL}/api/chat/conversations/${conversationId}/info`;
+            console.log('ℹ️ ChatService.getConversationInfo - URL:', url);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: this.getAuthHeaders(token),
+            });
+
+            console.log('ℹ️ ChatService.getConversationInfo - Response status:', response.status);
+
+            if (!response.ok) {
+                throw new Error(`Error getting conversation info: ${response.status}`);
+            }
+
+            const data: APIResponse<ConversationInfo> = await response.json();
+            console.log('✅ ChatService.getConversationInfo - Success:', data);
+
+            if (!data.success || !data.data) {
+                throw new Error('Invalid response format');
+            }
+
+            return data.data;
+        } catch (error) {
+            console.error('❌ ChatService.getConversationInfo - Error:', error);
             throw error;
         }
     }

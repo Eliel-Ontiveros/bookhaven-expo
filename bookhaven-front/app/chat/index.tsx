@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     TouchableOpacity,
@@ -10,8 +10,12 @@ import {
     FlatList,
     ActivityIndicator
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useColorScheme } from '../../hooks/use-color-scheme';
+import { Colors } from '../../constants/theme';
+import Header from '../../components/Header';
 
 import ChatList from '../../components/ChatList';
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,9 +33,12 @@ interface User {
 export default function ChatIndexScreen() {
     const router = useRouter();
     const { user, token } = useAuth();
+    const colorScheme = useColorScheme();
+    const theme = Colors[colorScheme ?? 'light'];
 
     const [conversations, setConversations] = useState<ChatConversation[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<ChatUser[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -39,14 +46,29 @@ export default function ChatIndexScreen() {
 
     useEffect(() => {
         if (user && token) {
-            loadConversations();
+            loadConversations(true); // Carga inicial con loading
         }
     }, [user, token]);
 
-    const loadConversations = async () => {
+    // Refrescar conversaciones cuando la pantalla vuelva a estar en foco
+    useFocusEffect(
+        useCallback(() => {
+            if (user && token) {
+                console.log('📱 Pantalla de chat en foco - refrescando conversaciones...');
+                loadConversations(false); // Refresh silencioso sin mostrar loading
+            }
+        }, [user, token])
+    );
+
+    const loadConversations = async (showLoading: boolean = true) => {
         if (!token) return;
 
         try {
+            if (showLoading) {
+                setLoading(true);
+            } else {
+                setRefreshing(true);
+            }
             console.log('🔄 Cargando conversaciones...');
             const conversationData = await ChatService.getConversations(token);
             console.log('💬 Conversaciones cargadas:', conversationData);
@@ -55,7 +77,11 @@ export default function ChatIndexScreen() {
             console.error('❌ Error al cargar conversaciones:', error);
             Alert.alert('Error', 'No se pudieron cargar las conversaciones');
         } finally {
-            setLoading(false);
+            if (showLoading) {
+                setLoading(false);
+            } else {
+                setRefreshing(false);
+            }
         }
     };
 
@@ -120,14 +146,8 @@ export default function ChatIndexScreen() {
             setSearchQuery('');
             setSearchResults([]);
 
-            // Actualizar la lista de conversaciones
-            setConversations(prev => {
-                const exists = prev.find(c => c.id === conversation.id);
-                if (exists) {
-                    return prev;
-                }
-                return [conversation, ...prev];
-            });
+            // Refrescar la lista completa de conversaciones para asegurar datos actualizados
+            loadConversations(false);
 
             // Navegar a la conversación
             router.push({
@@ -189,12 +209,12 @@ export default function ChatIndexScreen() {
     }
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+            <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+            <Header />
             <Stack.Screen
                 options={{
-                    title: 'Mensajes',
+                    headerShown: false,
                 }}
             />
 
@@ -247,31 +267,32 @@ export default function ChatIndexScreen() {
                 conversations={conversations}
                 onConversationPress={handleConversationPress}
                 loading={loading}
+                refreshing={refreshing}
                 currentUserId={user.id.toString()}
             />
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#ffffff',
     },
     searchContainer: {
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#ffffff',
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        borderBottomColor: 'rgba(139, 69, 19, 0.1)',
     },
     searchInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: 'rgba(139, 69, 19, 0.05)',
         borderRadius: 20,
         paddingHorizontal: 16,
         height: 40,
+        borderWidth: 1,
+        borderColor: 'rgba(139, 69, 19, 0.1)',
     },
     searchIcon: {
         marginRight: 8,
@@ -279,7 +300,6 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 16,
-        color: '#333333',
         paddingVertical: 0,
     },
     clearButton: {
@@ -287,9 +307,8 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     searchResultsContainer: {
-        backgroundColor: '#ffffff',
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
+        borderBottomColor: 'rgba(139, 69, 19, 0.1)',
         maxHeight: 200,
     },
     searchResultsList: {
@@ -300,19 +319,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#f5f5f5',
+        borderBottomColor: 'rgba(139, 69, 19, 0.05)',
     },
     searchResultAvatar: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#007AFF',
+        backgroundColor: '#8B4513',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
     },
     searchResultAvatarText: {
-        color: '#ffffff',
+        color: '#F5F5DC',
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -322,12 +341,11 @@ const styles = StyleSheet.create({
     searchResultUsername: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#333333',
         marginBottom: 2,
     },
     searchResultEmail: {
         fontSize: 14,
-        color: '#666666',
+        opacity: 0.7,
     },
     headerButton: {
         paddingHorizontal: 16,

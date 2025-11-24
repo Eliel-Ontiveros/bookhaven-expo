@@ -9,7 +9,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
 import ChatScreen from '../../components/ChatScreen';
 import { useAuth } from '../../contexts/AuthContext';
-import { ChatService, type Message } from '../../lib/api/chat';
+import { ChatService, type Message, type ConversationInfo } from '../../lib/api/chat';
 
 export default function ConversationScreen() {
     const router = useRouter();
@@ -22,10 +22,12 @@ export default function ConversationScreen() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
+    const [conversationInfo, setConversationInfo] = useState<ConversationInfo | null>(null);
 
     useEffect(() => {
         if (user && token && conversationId) {
             loadMessages();
+            loadConversationInfo();
             const cleanup = initializeSocket();
             return cleanup;
         }
@@ -79,13 +81,24 @@ export default function ConversationScreen() {
         }
     };
 
-    const sendMessage = async (content: string) => {
+    const loadConversationInfo = async () => {
+        if (!token || !conversationId) return;
+
+        try {
+            const info = await ChatService.getConversationInfo(conversationId, token);
+            setConversationInfo(info);
+        } catch (error) {
+            console.error('Error al cargar información de la conversación:', error);
+        }
+    };
+
+    const sendMessage = async (content: string, messageType: 'TEXT' | 'IMAGE' | 'BOOK_RECOMMENDATION' = 'TEXT') => {
         if (!token || !conversationId) {
             throw new Error('No hay conexión disponible');
         }
 
         try {
-            const newMessage = await ChatService.sendMessage(conversationId, content, 'TEXT', token);
+            const newMessage = await ChatService.sendMessage(conversationId, content, messageType, token);
             // Agregar el mensaje inmediatamente si es válido
             if (newMessage && newMessage.id) {
                 setMessages(prev => [...prev, newMessage]);
@@ -116,8 +129,7 @@ export default function ConversationScreen() {
 
             <Stack.Screen
                 options={{
-                    title: conversationName || 'Chat',
-                    headerBackTitle: 'Volver',
+                    headerShown: false, // Ocultamos el header por defecto para usar nuestro header personalizado
                 }}
             />
 
@@ -131,6 +143,7 @@ export default function ConversationScreen() {
                 onTypingStart={handleTypingStart}
                 onTypingStop={handleTypingStop}
                 typingUsers={typingUsers}
+                otherParticipant={conversationInfo?.otherParticipant}
             />
         </View>
     );
