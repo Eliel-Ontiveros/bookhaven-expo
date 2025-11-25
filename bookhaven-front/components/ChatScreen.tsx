@@ -71,6 +71,7 @@ export default function ChatScreen({
     const [showBookSelector, setShowBookSelector] = useState(false);
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
     const [showImagePicker, setShowImagePicker] = useState(false);
+    const [showAttachModal, setShowAttachModal] = useState(false);
     const flatListRef = useRef<FlatList>(null);
     const typingTimeoutRef = useRef<any>(null);
 
@@ -155,16 +156,19 @@ export default function ChatScreen({
     };
 
     const handleShareBook = () => {
+        setShowAttachModal(false);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setShowBookSelector(true);
     };
 
     const handleVoiceRecording = () => {
+        setShowAttachModal(false);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setShowVoiceRecorder(true);
     };
 
     const handleImagePicker = () => {
+        setShowAttachModal(false);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setShowImagePicker(true);
     };
@@ -582,6 +586,13 @@ export default function ChatScreen({
 
                 {/* Input de mensaje */}
                 <View style={styles.inputContainer}>
+                    <TouchableOpacity
+                        style={styles.attachButton}
+                        onPress={() => setShowAttachModal(true)}
+                        disabled={sending}
+                    >
+                        <Ionicons name="add" size={24} color="#007AFF" />
+                    </TouchableOpacity>
                     <TextInput
                         style={styles.textInput}
                         value={inputText}
@@ -591,39 +602,6 @@ export default function ChatScreen({
                         maxLength={1000}
                         editable={!sending}
                     />
-                    <TouchableOpacity
-                        style={styles.shareButton}
-                        onPress={handleShareBook}
-                        disabled={sending}
-                    >
-                        <Ionicons
-                            name="book"
-                            size={20}
-                            color="#ffffff"
-                        />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.imageButton}
-                        onPress={handleImagePicker}
-                        disabled={sending}
-                    >
-                        <Ionicons
-                            name="image"
-                            size={20}
-                            color="#ffffff"
-                        />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.voiceButton}
-                        onPress={handleVoiceRecording}
-                        disabled={sending}
-                    >
-                        <Ionicons
-                            name="mic"
-                            size={20}
-                            color="#ffffff"
-                        />
-                    </TouchableOpacity>
                     <TouchableOpacity
                         style={[
                             styles.sendButton,
@@ -639,6 +617,47 @@ export default function ChatScreen({
                         />
                     </TouchableOpacity>
                 </View>
+
+                {/* Modal de adjuntos tipo WhatsApp */}
+                {showAttachModal && (
+                    <View style={styles.attachModalOverlay}>
+                        <View style={styles.attachModalContainer}>
+                            <Text style={styles.attachModalTitle}>Adjuntar</Text>
+                            <View style={styles.attachModalButtonsRow}>
+                                <TouchableOpacity
+                                    style={styles.attachModalButton}
+                                    onPress={handleShareBook}
+                                    disabled={sending}
+                                >
+                                    <Ionicons name="book" size={28} color="#DAA520" />
+                                    <Text style={styles.attachModalButtonText}>Libro</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.attachModalButton}
+                                    onPress={handleImagePicker}
+                                    disabled={sending}
+                                >
+                                    <Ionicons name="image" size={28} color="#4CAF50" />
+                                    <Text style={styles.attachModalButtonText}>Imagen</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.attachModalButton}
+                                    onPress={handleVoiceRecording}
+                                    disabled={sending}
+                                >
+                                    <Ionicons name="mic" size={28} color="#FF6B6B" />
+                                    <Text style={styles.attachModalButtonText}>Voz</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <TouchableOpacity
+                                style={styles.attachModalClose}
+                                onPress={() => setShowAttachModal(false)}
+                            >
+                                <Ionicons name="close" size={24} color="#333" />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
 
                 {/* Modal del selector de libros */}
                 <BookListSelector
@@ -810,32 +829,68 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    shareButton: {
+    attachButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#DAA520', // Dorado elegante, perfecto para libros
+        backgroundColor: '#F0F0F0',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 8,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
     },
-    imageButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#4CAF50', // Verde para imágenes
+    // Modal de adjuntos tipo WhatsApp
+    attachModalOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.3)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 8,
+        zIndex: 1000,
     },
-    voiceButton: {
-        width: 40,
-        height: 40,
+    attachModalContainer: {
+        backgroundColor: '#fff',
         borderRadius: 20,
-        backgroundColor: '#FF6B6B', // Rojo suave para notas de voz
-        justifyContent: 'center',
+        padding: 24,
+        minWidth: 260,
         alignItems: 'center',
-        marginRight: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    attachModalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 18,
+        color: '#333',
+    },
+    attachModalButtonsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 18,
+    },
+    attachModalButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: 10,
+    },
+    attachModalButtonText: {
+        fontSize: 13,
+        marginTop: 6,
+        color: '#333',
+    },
+    attachModalClose: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        padding: 6,
     },
     bookMessageBubble: {
         padding: 0,
