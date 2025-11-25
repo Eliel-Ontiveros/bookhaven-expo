@@ -132,9 +132,15 @@ export default function PostDetailScreen() {
     const renderComment = (comment: PostComment) => (
         <View key={comment.id} style={[styles.commentCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <View style={styles.commentHeader}>
-                <View style={[styles.avatar, { backgroundColor: theme.tint }]}>
+                <TouchableOpacity
+                    style={[styles.avatar, { backgroundColor: theme.tint }]}
+                    onPress={() => {
+                        router.push(`/user-profile?userId=${comment.user.id}` as any);
+                    }}
+                    activeOpacity={0.7}
+                >
                     <Text style={styles.avatarText}>{comment.user.username.charAt(0).toUpperCase()}</Text>
-                </View>
+                </TouchableOpacity>
                 <View style={styles.commentUserInfo}>
                     <Text style={[styles.commentUsername, { color: theme.text }]}>{comment.user.username}</Text>
                     <Text style={[styles.commentDate, { color: theme.textSecondary }]}>
@@ -200,9 +206,15 @@ export default function PostDetailScreen() {
                 <View style={[styles.postCard, { backgroundColor: theme.card }]}>
                     <View style={styles.postHeader}>
                         <View style={styles.userInfo}>
-                            <View style={[styles.avatar, { backgroundColor: theme.tint }]}>
+                            <TouchableOpacity
+                                style={[styles.avatar, { backgroundColor: theme.tint }]}
+                                onPress={() => {
+                                    router.push(`/user-profile?userId=${post.user.id}` as any);
+                                }}
+                                activeOpacity={0.7}
+                            >
                                 <Text style={styles.avatarText}>{post.user.username.charAt(0).toUpperCase()}</Text>
-                            </View>
+                            </TouchableOpacity>
                             <View>
                                 <Text style={[styles.username, { color: theme.text }]}>{post.user.username}</Text>
                                 <Text style={[styles.date, { color: theme.textSecondary }]}>

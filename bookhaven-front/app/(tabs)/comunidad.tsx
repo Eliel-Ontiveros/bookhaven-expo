@@ -135,9 +135,15 @@ export default function ComunidadScreen() {
         >
             <View style={styles.postHeader}>
                 <View style={styles.userInfo}>
-                    <View style={[styles.avatar, { backgroundColor: theme.tint }]}>
+                    <TouchableOpacity
+                        style={[styles.avatar, { backgroundColor: theme.tint }]}
+                        onPress={() => {
+                            router.push(`/user-profile?userId=${post.user.id}` as any);
+                        }}
+                        activeOpacity={0.7}
+                    >
                         <Text style={styles.avatarText}>{post.user.username.charAt(0).toUpperCase()}</Text>
-                    </View>
+                    </TouchableOpacity>
                     <View>
                         <Text style={[styles.username, { color: theme.text }]}>{post.user.username}</Text>
                         <Text style={[styles.date, { color: theme.textSecondary }]}>

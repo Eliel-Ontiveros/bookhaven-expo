@@ -17,9 +17,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import Header from '@/components/Header';
+import { ChatService } from '@/lib/api/chat';
 
 interface UserProfile {
     user: {
@@ -97,17 +99,47 @@ export default function UserProfileScreen() {
         }
     };
 
-    const handleGoToChat = () => {
-        if (conversationId && conversationName) {
-            router.push({
-                pathname: '/chat/[conversationId]',
-                params: {
-                    conversationId,
-                    conversationName
+    const handleGoToChat = async () => {
+        try {
+            if (conversationId && conversationName) {
+                // Si ya tenemos una conversación, navegar directamente
+                router.push({
+                    pathname: '/chat/[conversationId]',
+                    params: {
+                        conversationId,
+                        conversationName
+                    }
+                });
+            } else if (userId && profile) {
+                // Si no tenemos conversación pero sí userId, crear una nueva conversación
+                const token = await AsyncStorage.getItem('authToken');
+                if (!token) {
+                    Alert.alert('Error', 'Debes iniciar sesión para enviar mensajes');
+                    return;
                 }
-            });
-        } else {
-            Alert.alert('Error', 'No se pudo acceder al chat');
+
+                // Crear nueva conversación con este usuario
+                const conversation = await ChatService.createConversation(
+                    [userId], // Array con el ID del usuario destinatario
+                    false, // No es grupo
+                    undefined, // Sin nombre específico (será generado automáticamente)
+                    token
+                );
+
+                // Navegar a la nueva conversación
+                router.push({
+                    pathname: '/chat/[conversationId]',
+                    params: {
+                        conversationId: conversation.id,
+                        conversationName: profile.user.username
+                    }
+                });
+            } else {
+                Alert.alert('Error', 'No se pudo acceder al chat');
+            }
+        } catch (error) {
+            console.error('Error creating conversation:', error);
+            Alert.alert('Error', 'No se pudo crear la conversación. Inténtalo de nuevo.');
         }
     };
 
