@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 // GET - Obtener mensajes de una conversación
 export async function GET(
     request: NextRequest,
-    { params }: { params: { conversationId: string } }
+    { params }: { params: Promise<{ conversationId: string }> }
 ) {
     try {
         const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -89,7 +89,7 @@ export async function GET(
 // POST - Enviar mensaje
 export async function POST(
     request: NextRequest,
-    { params }: { params: { conversationId: string } }
+    { params }: { params: Promise<{ conversationId: string }> }
 ) {
     try {
         const token = request.headers.get('authorization')?.replace('Bearer ', '');

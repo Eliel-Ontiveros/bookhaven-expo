@@ -5,7 +5,7 @@ import { APIResponse, AddBookToListRequest } from '@/lib/types/api';
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await AuthService.getUserFromRequest(req);
@@ -17,7 +17,8 @@ export async function POST(
             }, { status: 401 });
         }
 
-        const listId = parseInt(params.id);
+        const { id } = await params;
+        const listId = parseInt(id);
 
         if (isNaN(listId)) {
             return NextResponse.json<APIResponse>({
@@ -112,7 +113,7 @@ export async function POST(
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const user = await AuthService.getUserFromRequest(req);
@@ -124,7 +125,8 @@ export async function DELETE(
             }, { status: 401 });
         }
 
-        const listId = parseInt(params.id);
+        const { id } = await params;
+        const listId = parseInt(id);
 
         if (isNaN(listId)) {
             return NextResponse.json<APIResponse>({

@@ -17,11 +17,12 @@ function transformGoogleBookToBookResponse(volumeInfo: any, id: string): BookRes
 }
 
 export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
-        const bookId = params.id;
+        const bookId = id;
 
         if (!bookId) {
             return NextResponse.json<APIResponse>({

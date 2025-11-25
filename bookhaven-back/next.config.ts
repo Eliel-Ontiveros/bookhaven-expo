@@ -12,10 +12,7 @@ const nextConfig: NextConfig = {
   },
 
   // Configuración para optimizar builds de API y Socket.IO
-  serverExternalPackages: ['@prisma/client'],
-  experimental: {
-    serverComponentsExternalPackages: ["socket.io"]
-  },
+  serverExternalPackages: ['@prisma/client', "socket.io"],
 
   // Webpack config para Socket.IO
   webpack: (config: any) => {

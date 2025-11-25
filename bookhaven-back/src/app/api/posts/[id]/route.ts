@@ -4,11 +4,12 @@ import { prisma } from '@/lib/db/prisma';
 import { APIResponse, PostResponse, UpdatePostRequest } from '@/lib/types/api';
 
 export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
-        const postId = parseInt(params.id);
+        const postId = parseInt(id);
 
         if (isNaN(postId)) {
             return NextResponse.json<APIResponse>({
@@ -63,11 +64,12 @@ export async function GET(
 }
 
 export async function PUT(
-    req: NextRequest,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
-        const user = await AuthService.getUserFromRequest(req);
+        const user = await AuthService.getUserFromRequest(request);
 
         if (!user) {
             return NextResponse.json<APIResponse>({
@@ -76,7 +78,7 @@ export async function PUT(
             }, { status: 401 });
         }
 
-        const postId = parseInt(params.id);
+        const postId = parseInt(id);
 
         if (isNaN(postId)) {
             return NextResponse.json<APIResponse>({
@@ -104,7 +106,7 @@ export async function PUT(
             }, { status: 403 });
         }
 
-        const body: UpdatePostRequest = await req.json();
+        const body: UpdatePostRequest = await request.json();
         const { title, content, bookTitle, bookAuthor, bookId } = body;
 
         // Validar que al menos un campo esté presente
@@ -163,11 +165,12 @@ export async function PUT(
 }
 
 export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
-        const user = await AuthService.getUserFromRequest(req);
+        const user = await AuthService.getUserFromRequest(request);
 
         if (!user) {
             return NextResponse.json<APIResponse>({
@@ -176,7 +179,7 @@ export async function DELETE(
             }, { status: 401 });
         }
 
-        const postId = parseInt(params.id);
+        const postId = parseInt(id);
 
         if (isNaN(postId)) {
             return NextResponse.json<APIResponse>({

@@ -4,11 +4,12 @@ import { prisma } from '@/lib/db/prisma';
 import { APIResponse } from '@/lib/types/api';
 
 export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
-        const postId = parseInt(params.id);
+        const postId = parseInt(id);
 
         if (isNaN(postId)) {
             return NextResponse.json<APIResponse>({
@@ -65,11 +66,12 @@ export async function GET(
 }
 
 export async function POST(
-    req: NextRequest,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
-        const user = await AuthService.getUserFromRequest(req);
+        const user = await AuthService.getUserFromRequest(request);
 
         if (!user) {
             return NextResponse.json<APIResponse>({
@@ -78,7 +80,7 @@ export async function POST(
             }, { status: 401 });
         }
 
-        const postId = parseInt(params.id);
+        const postId = parseInt(id);
 
         if (isNaN(postId)) {
             return NextResponse.json<APIResponse>({
@@ -87,7 +89,7 @@ export async function POST(
             }, { status: 400 });
         }
 
-        const body = await req.json();
+        const body = await request.json();
         const { content } = body;
 
         if (!content || !content.trim()) {

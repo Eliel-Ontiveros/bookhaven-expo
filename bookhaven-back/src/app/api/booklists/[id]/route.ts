@@ -4,11 +4,12 @@ import { prisma } from '@/lib/db/prisma';
 import { APIResponse, BookListResponse } from '@/lib/types/api';
 
 export async function GET(
-    req: NextRequest,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
-        const user = await AuthService.getUserFromRequest(req);
+        const user = await AuthService.getUserFromRequest(request);
 
         if (!user) {
             return NextResponse.json<APIResponse>({
@@ -17,7 +18,7 @@ export async function GET(
             }, { status: 401 });
         }
 
-        const listId = parseInt(params.id);
+        const listId = parseInt(id);
 
         if (isNaN(listId)) {
             return NextResponse.json<APIResponse>({
@@ -80,11 +81,12 @@ export async function GET(
 }
 
 export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
-        const user = await AuthService.getUserFromRequest(req);
+        const user = await AuthService.getUserFromRequest(request);
 
         if (!user) {
             return NextResponse.json<APIResponse>({
@@ -93,7 +95,7 @@ export async function DELETE(
             }, { status: 401 });
         }
 
-        const listId = parseInt(params.id);
+        const listId = parseInt(id);
 
         if (isNaN(listId)) {
             return NextResponse.json<APIResponse>({

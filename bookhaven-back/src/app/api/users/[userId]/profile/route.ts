@@ -6,19 +6,19 @@ const prisma = new PrismaClient();
 // GET - Obtener perfil público de un usuario
 export async function GET(
     request: NextRequest,
-    { params }: { params: { userId: string } }
+    { params }: { params: Promise<{ userId: string }> }
 ) {
+    const { userId } = await params;
     try {
-        const resolvedParams = await params;
-        const userId = parseInt(resolvedParams.userId);
+        const userIdInt = parseInt(userId);
 
-        if (isNaN(userId)) {
+        if (isNaN(userIdInt)) {
             return NextResponse.json({ error: 'ID de usuario inválido' }, { status: 400 });
         }
 
         // Obtener información pública del usuario
         const user = await prisma.user.findUnique({
-            where: { id: userId },
+            where: { id: userIdInt },
             select: {
                 id: true,
                 username: true,
@@ -47,7 +47,7 @@ export async function GET(
         // Obtener las listas de libros públicas del usuario
         const bookLists = await prisma.bookList.findMany({
             where: {
-                userId: userId,
+                userId: userIdInt,
                 // Aquí podrías agregar un campo `isPublic` si quieres privacidad
             },
             select: {

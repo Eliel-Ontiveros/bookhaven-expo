@@ -7,8 +7,9 @@ const prisma = new PrismaClient();
 // GET - Obtener información de la conversación incluyendo participantes
 export async function GET(
     request: NextRequest,
-    { params }: { params: { conversationId: string } }
+    { params }: { params: Promise<{ conversationId: string }> }
 ) {
+    const { conversationId } = await params;
     try {
         const token = request.headers.get('authorization')?.replace('Bearer ', '');
 
@@ -17,15 +18,14 @@ export async function GET(
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
-        const resolvedParams = await params;
-        const conversationId = parseInt(resolvedParams.conversationId);
+        const conversationIdInt = parseInt(conversationId);
 
         // Verificar que el usuario es participante de la conversación
         const participant = await prisma.conversationParticipant.findUnique({
             where: {
                 userId_conversationId: {
                     userId: decoded.userId,
-                    conversationId: conversationId
+                    conversationId: conversationIdInt
                 }
             }
         });
@@ -36,7 +36,7 @@ export async function GET(
 
         // Obtener información de la conversación con participantes
         const conversation = await prisma.conversation.findUnique({
-            where: { id: conversationId },
+            where: { id: conversationIdInt },
             include: {
                 participants: {
                     include: {
@@ -62,7 +62,7 @@ export async function GET(
 
         // Encontrar al otro participante (no el usuario actual)
         const otherParticipant = conversation.participants.find(
-            p => p.user.id !== decoded.userId
+            (p: any) => p.user.id !== decoded.userId
         );
 
         return NextResponse.json({
@@ -72,7 +72,7 @@ export async function GET(
                 name: conversation.name,
                 isGroup: conversation.isGroup,
                 createdAt: conversation.createdAt,
-                participants: conversation.participants.map(p => ({
+                participants: conversation.participants.map((p: any) => ({
                     id: p.user.id,
                     username: p.user.username,
                     bio: p.user.profile?.bio,
