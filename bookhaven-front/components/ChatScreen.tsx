@@ -28,6 +28,9 @@ import Header from './Header';
 import VoiceRecorder from './VoiceRecorder';
 import VoicePlayer from './VoicePlayer';
 import { VoiceNoteService } from '../lib/api/voiceNotes';
+import ImagePickerModal from './ImagePickerModal';
+import { ImageService } from '../lib/api/images';
+import ChatImage from './ChatImage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ChatScreenProps {
@@ -67,6 +70,7 @@ export default function ChatScreen({
     const [sending, setSending] = useState(false);
     const [showBookSelector, setShowBookSelector] = useState(false);
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+    const [showImagePicker, setShowImagePicker] = useState(false);
     const flatListRef = useRef<FlatList>(null);
     const typingTimeoutRef = useRef<any>(null);
 
@@ -160,6 +164,11 @@ export default function ChatScreen({
         setShowVoiceRecorder(true);
     };
 
+    const handleImagePicker = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setShowImagePicker(true);
+    };
+
     const handleVoiceRecordingComplete = async (audioUri: string, duration: number) => {
         setShowVoiceRecorder(false);
         setSending(true);
@@ -211,6 +220,62 @@ export default function ChatScreen({
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     };
 
+    const handleImageSelected = async (imageUri: string) => {
+        setShowImagePicker(false);
+        setSending(true);
+
+        try {
+            // Haptic feedback para indicar inicio de subida
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+            const token = await AsyncStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No hay token de autenticación');
+            }
+
+            // Obtener dimensiones de la imagen
+            const { width, height } = await new Promise<{ width: number; height: number }>((resolve) => {
+                Image.getSize(imageUri, (width, height) => {
+                    resolve({ width, height });
+                }, () => {
+                    resolve({ width: 0, height: 0 });
+                });
+            });
+
+            // Generar nombre único para el archivo
+            const fileName = `image-${Date.now()}.jpg`;
+
+            console.log('🖼️ Subiendo imagen:', { fileName, width, height });
+
+            // Subir imagen a S3
+            const uploadResult = await ImageService.uploadImage(imageUri, fileName, token);
+
+            console.log('✅ Imagen subida:', uploadResult);
+
+            // Enviar mensaje de imagen
+            await ImageService.sendImageMessage(
+                conversationId,
+                uploadResult.s3Key,
+                width,
+                height,
+                uploadResult.size,
+                token
+            );
+
+            // Haptic feedback de éxito
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        } catch (error) {
+            console.error('Error enviando imagen:', error);
+            Alert.alert('Error', 'No se pudo enviar la imagen');
+
+            // Haptic feedback de error
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        } finally {
+            setSending(false);
+        }
+    };
+
     const handleViewUserProfile = () => {
         if (otherParticipant) {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -246,6 +311,37 @@ export default function ChatScreen({
             (!previousMessage || previousMessage.senderId !== item.senderId);
 
         const renderMessageContent = () => {
+            if (item.messageType === 'IMAGE') {
+                console.log('🖼️ Rendering image:', {
+                    messageId: item.id,
+                    imageUrl: item.imageUrl,
+                    imageWidth: item.imageWidth,
+                    imageHeight: item.imageHeight,
+                    content: item.content,
+                    fullMessage: item
+                });
+
+                if (!item.imageUrl) {
+                    console.error('❌ Message has type IMAGE but no imageUrl:', item);
+                    return (
+                        <View style={{ padding: 12 }}>
+                            <Text style={{ color: isOwnMessage ? '#fff' : '#666' }}>
+                                ⚠️ Error: Imagen no disponible
+                            </Text>
+                        </View>
+                    );
+                }
+
+                return (
+                    <ChatImage
+                        imageUrl={item.imageUrl}
+                        imageWidth={item.imageWidth}
+                        imageHeight={item.imageHeight}
+                        isOwnMessage={isOwnMessage}
+                    />
+                );
+            }
+
             if (item.messageType === 'VOICE_NOTE') {
                 console.log('🎵 Rendering voice note:', {
                     audioUrl: item.audioUrl,
@@ -507,6 +603,17 @@ export default function ChatScreen({
                         />
                     </TouchableOpacity>
                     <TouchableOpacity
+                        style={styles.imageButton}
+                        onPress={handleImagePicker}
+                        disabled={sending}
+                    >
+                        <Ionicons
+                            name="image"
+                            size={20}
+                            color="#ffffff"
+                        />
+                    </TouchableOpacity>
+                    <TouchableOpacity
                         style={styles.voiceButton}
                         onPress={handleVoiceRecording}
                         disabled={sending}
@@ -538,6 +645,13 @@ export default function ChatScreen({
                     visible={showBookSelector}
                     onClose={() => setShowBookSelector(false)}
                     onBookSelect={handleBookSelect}
+                />
+
+                {/* Modal de selección de imagen */}
+                <ImagePickerModal
+                    visible={showImagePicker}
+                    onClose={() => setShowImagePicker(false)}
+                    onImageSelected={handleImageSelected}
                 />
 
                 {/* Modal de grabación de voz */}
@@ -701,6 +815,15 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 20,
         backgroundColor: '#DAA520', // Dorado elegante, perfecto para libros
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+    imageButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#4CAF50', // Verde para imágenes
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 8,

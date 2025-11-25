@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AuthService } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { APIResponse } from '@/lib/types/api';
+import { PushNotificationService } from '@/lib/notifications/push';
 
 export async function GET(
     request: NextRequest,
@@ -134,6 +135,30 @@ export async function POST(
                 username: comment.user.username
             }
         };
+
+        // Enviar notificación push al autor del post (si no es el mismo usuario)
+        try {
+            if (post.userId !== user.id) {
+                const postAuthor = await prisma.user.findUnique({
+                    where: { id: post.userId },
+                    select: { pushToken: true }
+                });
+
+                if (postAuthor && postAuthor.pushToken) {
+                    PushNotificationService.notifyNewPostComment(
+                        postAuthor.pushToken,
+                        comment.user.username,
+                        content.trim(),
+                        postId
+                    ).catch(error => {
+                        console.error('Error sending push notification:', error);
+                    });
+                }
+            }
+        } catch (notifError) {
+            console.error('Error sending push notification:', notifError);
+            // No fallar el request si las notificaciones fallan
+        }
 
         return NextResponse.json<APIResponse>({
             success: true,

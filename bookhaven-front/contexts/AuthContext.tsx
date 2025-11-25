@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { apiService } from '@/lib/api/service';
 import { User } from '@/lib/api/types';
+import { NotificationService } from '@/lib/notifications';
+import NotificationAPIService from '@/lib/api/notifications';
 
 interface AuthContextType {
   user: User | null;
@@ -48,6 +50,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     checkAuthStatus();
+    // Setup notification listeners
+    NotificationService.setupNotificationListeners();
   }, []);
 
   const checkAuthStatus = async () => {
@@ -63,6 +67,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (response.success && response.data) {
           setUser(response.data);
           console.log('✅ User authenticated:', response.data.username);
+
+          // Register for push notifications
+          try {
+            const pushToken = await NotificationService.registerForPushNotificationsAsync();
+            if (pushToken) {
+              await NotificationAPIService.registerPushToken(pushToken);
+              console.log('🔔 Push token registered successfully');
+            }
+          } catch (notifError) {
+            console.error('⚠️ Failed to register push notifications:', notifError);
+            // Don't fail auth if notifications fail
+          }
         } else {
           console.log('❌ Token invalid, removing...');
           await AsyncStorage.removeItem('authToken');
@@ -99,6 +115,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setToken(response.data.token);
         setUser(response.data.user);
         console.log('👤 User logged in:', response.data.user.username);
+
+        // Register for push notifications
+        try {
+          const pushToken = await NotificationService.registerForPushNotificationsAsync();
+          if (pushToken) {
+            await NotificationAPIService.registerPushToken(pushToken);
+            console.log('🔔 Push token registered successfully');
+          }
+        } catch (notifError) {
+          console.error('⚠️ Failed to register push notifications:', notifError);
+          // Don't fail login if notifications fail
+        }
       } else {
         throw new Error(response.error || 'Error al iniciar sesión');
       }
@@ -131,6 +159,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setToken(response.data.token);
         setUser(response.data.user);
         console.log('👤 User registered:', response.data.user.username);
+
+        // Register for push notifications
+        try {
+          const pushToken = await NotificationService.registerForPushNotificationsAsync();
+          if (pushToken) {
+            await NotificationAPIService.registerPushToken(pushToken);
+            console.log('🔔 Push token registered successfully');
+          }
+        } catch (notifError) {
+          console.error('⚠️ Failed to register push notifications:', notifError);
+          // Don't fail registration if notifications fail
+        }
       } else {
         throw new Error(response.error || 'Error al registrar usuario');
       }
@@ -145,6 +185,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = async (): Promise<void> => {
     try {
       console.log('🚪 Logging out user...');
+
+      // Unregister push token
+      try {
+        await NotificationAPIService.unregisterPushToken();
+        console.log('🔔 Push token unregistered successfully');
+      } catch (notifError) {
+        console.error('⚠️ Failed to unregister push notifications:', notifError);
+        // Continue with logout even if unregister fails
+      }
+
       await AsyncStorage.removeItem('authToken');
       setUser(null);
       setToken(null);

@@ -71,6 +71,13 @@ export const API_CONFIG = {
     // Voice Notes
     UPLOAD_VOICE: '/api/upload/voice',
     VOICE_NOTES: '/api/voice-notes',
+
+    // Images
+    UPLOAD_IMAGE: '/api/upload/image',
+    IMAGES: '/api/images',
+
+    // Notifications
+    REGISTER_PUSH_TOKEN: '/api/notifications/register',
   },
   HEADERS: {
     'Content-Type': 'application/json',

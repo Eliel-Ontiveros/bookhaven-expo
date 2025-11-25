@@ -31,6 +31,11 @@ export interface Message {
     audioDuration?: number;
     audioSize?: number;
     transcription?: string;
+
+    // Campos para imágenes
+    imageUrl?: string;
+    imageWidth?: number;
+    imageHeight?: number;
 }
 
 export interface ConversationInfo {
@@ -258,7 +263,11 @@ export class ChatService {
                     audioUrl: msg.audioUrl || undefined,
                     audioDuration: msg.audioDuration || undefined,
                     audioSize: msg.audioSize || undefined,
-                    transcription: msg.transcription || undefined
+                    transcription: msg.transcription || undefined,
+                    // Campos específicos para imágenes
+                    imageUrl: msg.imageUrl || undefined,
+                    imageWidth: msg.imageWidth || undefined,
+                    imageHeight: msg.imageHeight || undefined
                 }));
 
             console.log('🔄 Converted messages:', messages);

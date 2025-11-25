@@ -60,6 +60,20 @@ export interface UploadVoiceNoteResponse {
   size: number;
 }
 
+// Image Types
+export interface ImageData {
+  s3Key: string;
+  size: number;
+  width?: number;
+  height?: number;
+  url?: string; // URL firmada para visualización
+}
+
+export interface UploadImageResponse {
+  s3Key: string;
+  size: number;
+}
+
 export interface BookRating {
   id: number;
   rating: number;

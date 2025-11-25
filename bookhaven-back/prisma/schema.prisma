@@ -15,6 +15,7 @@ model User {
   birthdate      DateTime
   profileId      Int
   createdAt      DateTime        @default(now())
+  pushToken      String?         // Token para notificaciones push
   bookLists      BookList[]
   ratings        BookRating[]
   comments       Comment[]
@@ -161,6 +162,11 @@ model Message {
   audioDuration  Int?         // Duración en segundos
   audioSize      Int?         // Tamaño del archivo en bytes
   transcription  String?      // Transcripción opcional del audio
+  
+  // Campos para imágenes
+  imageUrl       String?      // URL de la imagen en S3
+  imageWidth     Int?         // Ancho de la imagen en píxeles
+  imageHeight    Int?         // Alto de la imagen en píxeles
   
   sender         User         @relation(fields: [senderId], references: [id])
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
