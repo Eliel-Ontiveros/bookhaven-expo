@@ -17,6 +17,8 @@ interface SearchResultsProps {
   onEndReached?: () => void;
   loading?: boolean;
   loadingMore?: boolean;
+  /** Si es true, renderiza como View simple en lugar de FlatList (para usar dentro de ScrollView) */
+  nestedInScrollView?: boolean;
 }
 
 export default function SearchResults({
@@ -24,7 +26,8 @@ export default function SearchResults({
   onBookPress,
   onEndReached,
   loading = false,
-  loadingMore = false
+  loadingMore = false,
+  nestedInScrollView = false
 }: SearchResultsProps) {
   const renderBookItem = ({ item }: { item: Book }) => (
     <TouchableOpacity
@@ -86,6 +89,34 @@ export default function SearchResults({
     );
   }
 
+  // Si está anidado en un ScrollView, renderizar como View simple para evitar el error
+  if (nestedInScrollView) {
+    // Agrupar items en filas de 2
+    const rows: Book[][] = [];
+    for (let i = 0; i < results.length; i += 2) {
+      rows.push(results.slice(i, i + 2));
+    }
+
+    return (
+      <View style={styles.container}>
+        <View style={styles.listContainer}>
+          {rows.map((row, rowIndex) => (
+            <View key={rowIndex} style={styles.row}>
+              {row.map((item) => (
+                <React.Fragment key={item.id}>
+                  {renderBookItem({ item })}
+                </React.Fragment>
+              ))}
+              {/* Si la fila tiene solo un elemento, agregar un espacio vacío */}
+              {row.length === 1 && <View style={styles.emptyCard} />}
+            </View>
+          ))}
+          {loadingMore && renderFooter()}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -120,8 +151,10 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   row: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 15,
+    width: '100%',
   },
   bookCard: {
     backgroundColor: '#FFFFFF',
@@ -212,5 +245,8 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 20,
     alignItems: 'center',
+  },
+  emptyCard: {
+    width: '48%',
   },
 });

@@ -16,10 +16,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '@/lib/api/service';
 import { Book } from '@/lib/api/types';
-import FilterButtons from '@/components/FilterButtons';
-import GenreDropdown from '@/components/GenreDropdown';
-import AuthorSearch from '@/components/AuthorSearch';
-import SearchResults from '@/components/SearchResults';
+import { FilterButtons, GenreDropdown, AuthorSearch, SearchResults } from '@/components/search';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 
@@ -570,6 +567,7 @@ export default function RecommendationsScreen() {
                 onBookPress={handleBookPress}
                 loading={loading}
                 loadingMore={loadingMore}
+                nestedInScrollView
               />
             ) : (
               <View style={styles.emptyContainer}>

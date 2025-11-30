@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { format, isToday, isYesterday } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { type Conversation } from '../lib/api/chat';
+import { type Conversation } from '@/lib/api/chat';
 
 interface ChatListProps {
     conversations: Conversation[];

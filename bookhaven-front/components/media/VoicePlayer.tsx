@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { VoiceNoteService } from '../lib/api/voiceNotes';
+import { VoiceNoteService } from '@/lib/api/voiceNotes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface VoicePlayerProps {

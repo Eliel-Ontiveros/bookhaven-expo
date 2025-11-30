@@ -17,7 +17,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '@/lib/api/service';
 import { Book } from '@/lib/api/types';
-import BookCard from '@/components/BookCard';
+import { BookCard } from '@/components/books';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 

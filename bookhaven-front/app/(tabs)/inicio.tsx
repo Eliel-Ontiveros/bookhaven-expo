@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,15 @@ import {
   ActivityIndicator,
   Dimensions,
   StatusBar,
+  Animated,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import SearchResults from '@/components/SearchResults';
+import { SearchResults } from '@/components/search';
 import { apiService } from '@/lib/api/service';
 import { Book } from '@/lib/api/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +30,17 @@ export default function HomeScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [recommendedBooks, setRecommendedBooks] = useState<Book[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(true);
+
+  // Estados para scroll infinito
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+
+  // Referencias
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollToTopButtonOpacity = useRef(new Animated.Value(0)).current;
+
   const { user } = useAuth();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
@@ -37,56 +51,110 @@ export default function HomeScreen() {
   // Cargar recomendaciones al inicializar la pantalla
   useEffect(() => {
     if (user) {
-      loadRecommendations();
+      loadRecommendations(1, true);
     } else {
-      loadPopularBooks();
+      loadPopularBooks(1, true);
     }
   }, [user]);
 
-  // Función para cargar recomendaciones del usuario autenticado
-  const loadRecommendations = async () => {
-    setLoadingRecommendations(true);
-    try {
-      console.log('🌟 Loading user recommendations...');
-      const response = await apiService.getUserRecommendations();
-      console.log('🌟 Recommendations response:', response);
+  // Efecto para animar el botón de scroll-to-top
+  useEffect(() => {
+    Animated.timing(scrollToTopButtonOpacity, {
+      toValue: showScrollToTop ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [showScrollToTop]);
 
-      if (response.success && response.data) {
-        const recommendationsData = Array.isArray(response.data) ? response.data : [];
-        setRecommendedBooks(recommendationsData);
-        console.log('✅ Recommendations loaded:', recommendationsData.length);
+  // Función para cargar recomendaciones del usuario autenticado
+  const loadRecommendations = async (page: number = 1, reset: boolean = false) => {
+    if (reset) {
+      setLoadingRecommendations(true);
+      setCurrentPage(1);
+      setHasMore(true);
+    } else {
+      setLoadingMore(true);
+    }
+
+    try {
+      // En la primera página, cargar recomendaciones del usuario
+      if (page === 1) {
+        console.log(`🌟 Loading user recommendations...`);
+        const response = await apiService.getUserRecommendations();
+        console.log('🌟 Recommendations response:', response);
+
+        if (response.success && response.data) {
+          const recommendationsData = Array.isArray(response.data) ? response.data : [];
+          setRecommendedBooks(recommendationsData);
+          setCurrentPage(1);
+          // Si hay recomendaciones, permitir cargar más libros populares
+          setHasMore(recommendationsData.length >= 10);
+          console.log('✅ Recommendations loaded:', recommendationsData.length);
+        } else {
+          console.log('❌ Failed to load recommendations, loading popular books');
+          await loadPopularBooks(1, true);
+        }
       } else {
-        console.log('❌ Failed to load recommendations, loading popular books');
-        await loadPopularBooks();
+        // Para páginas siguientes, cargar libros populares adicionales
+        console.log(`📚 Loading more books (page ${page})...`);
+        await loadPopularBooks(page, false);
       }
     } catch (error) {
       console.error('❌ Error loading recommendations:', error);
-      await loadPopularBooks();
+      if (reset) {
+        await loadPopularBooks(1, true);
+      }
     }
     setLoadingRecommendations(false);
+    setLoadingMore(false);
   };
 
   // Función para cargar libros populares como fallback
-  const loadPopularBooks = async () => {
-    setLoadingRecommendations(true);
+  const loadPopularBooks = async (page: number = 1, reset: boolean = false) => {
+    if (reset) {
+      setLoadingRecommendations(true);
+      setCurrentPage(1);
+      setHasMore(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      console.log('📚 Loading popular books...');
+      console.log(`📚 Loading popular books... (page ${page})`);
 
       const popularQueries = ['bestseller', 'fiction', 'novel'];
+      const query = popularQueries[Math.floor(Math.random() * popularQueries.length)];
 
-      for (const query of popularQueries) {
-        const response = await apiService.searchBooks({ query, limit: 20 });
-        if (response.success && response.data && Array.isArray(response.data) && response.data.length > 0) {
-          setRecommendedBooks(response.data.slice(0, 20));
-          console.log('✅ Popular books loaded:', response.data.length);
-          break;
+      const response = await apiService.searchBooks({ query, page, limit: 20 });
+
+      if (response.success && response.data) {
+        let booksData: Book[] = [];
+
+        if (Array.isArray(response.data)) {
+          booksData = response.data;
+        } else if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+          booksData = Array.isArray((response.data as any).data) ? (response.data as any).data : [];
         }
+
+        if (reset) {
+          setRecommendedBooks(booksData);
+        } else {
+          setRecommendedBooks(prev => [...prev, ...booksData]);
+        }
+
+        setCurrentPage(page);
+        setHasMore(booksData.length === 20);
+        console.log('✅ Popular books loaded:', booksData.length);
       }
     } catch (error) {
       console.error('❌ Error loading popular books:', error);
-      setRecommendedBooks([]);
+      if (reset) {
+        setRecommendedBooks([]);
+      }
+      setHasMore(false);
     }
     setLoadingRecommendations(false);
+    setLoadingMore(false);
   };
 
   // Búsqueda debounced para mejor UX
@@ -210,6 +278,43 @@ export default function HomeScreen() {
     setIsSearching(false);
   };
 
+  // Función para cargar más recomendaciones
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore && !searchQuery.trim()) {
+      const nextPage = currentPage + 1;
+      console.log(`⬇️ Loading more books - page ${nextPage}`);
+
+      if (user) {
+        loadRecommendations(nextPage, false);
+      } else {
+        loadPopularBooks(nextPage, false);
+      }
+    }
+  };
+
+  // Manejar el scroll para detectar el final y mostrar botón scroll-to-top
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    const contentHeight = event.nativeEvent.contentSize.height;
+    const scrollViewHeight = event.nativeEvent.layoutMeasurement.height;
+
+    // Mostrar/ocultar botón de scroll to top
+    setShowScrollToTop(scrollY > 300);
+
+    // Detectar cuando se está cerca del final para scroll infinito
+    const isNearEnd = scrollY + scrollViewHeight >= contentHeight - 100;
+
+    if (isNearEnd && !loadingMore && hasMore && recommendedBooks.length > 0 && !searchQuery.trim()) {
+      console.log('📱 Near end detected, triggering load more...');
+      handleLoadMore();
+    }
+  };
+
+  // Función para hacer scroll al inicio
+  const scrollToTop = () => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
@@ -277,9 +382,12 @@ export default function HomeScreen() {
 
       {/* Main Content */}
       <ScrollView
+        ref={scrollViewRef}
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {isSearching ? (
           <View style={styles.loadingContainer}>
@@ -295,7 +403,7 @@ export default function HomeScreen() {
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>
                   Resultados de búsqueda ({searchResults.length})
                 </Text>
-                <SearchResults results={searchResults} onBookPress={handleBookPress} />
+                <SearchResults results={searchResults} onBookPress={handleBookPress} nestedInScrollView />
               </>
             ) : (
               <View style={[styles.emptyState, { backgroundColor: theme.card }]}>
@@ -385,7 +493,28 @@ export default function HomeScreen() {
                   </View>
                 </View>
               ) : recommendedBooks.length > 0 ? (
-                <SearchResults results={recommendedBooks} onBookPress={handleBookPress} />
+                <>
+                  <SearchResults results={recommendedBooks} onBookPress={handleBookPress} nestedInScrollView />
+
+                  {/* Indicador de carga para más libros */}
+                  {loadingMore && (
+                    <View style={styles.loadingMoreContainer}>
+                      <ActivityIndicator size="small" color={theme.tint} />
+                      <Text style={[styles.loadingMoreText, { color: theme.textSecondary }]}>
+                        Cargando más libros...
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Mensaje cuando no hay más libros */}
+                  {!hasMore && recommendedBooks.length > 0 && (
+                    <View style={styles.endOfListContainer}>
+                      <Text style={[styles.endOfListText, { color: theme.textSecondary }]}>
+                        ✦ Has llegado al final ✦
+                      </Text>
+                    </View>
+                  )}
+                </>
               ) : (
                 <View style={[styles.emptyState, { backgroundColor: (theme as any).pageYellow }]}>
                   <View style={styles.emptyStateContent}>
@@ -409,6 +538,23 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Botón de Scroll to Top */}
+      <Animated.View
+        style={[
+          styles.scrollToTopButton,
+          {
+            opacity: scrollToTopButtonOpacity,
+            backgroundColor: theme.tint,
+            bottom: insets.bottom + 20,
+          },
+        ]}
+        pointerEvents={showScrollToTop ? 'auto' : 'none'}
+      >
+        <TouchableOpacity onPress={scrollToTop} style={styles.scrollToTopTouchable}>
+          <Ionicons name="chevron-up" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
@@ -747,5 +893,49 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: 'bold',
+  },
+  // Scroll to Top Button
+  scrollToTopButton: {
+    position: 'absolute',
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  scrollToTopTouchable: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Loading More Styles
+  loadingMoreContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 10,
+  },
+  loadingMoreText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // End of List Styles
+  endOfListContainer: {
+    alignItems: 'center',
+    paddingVertical: 25,
+  },
+  endOfListText: {
+    fontSize: 14,
+    fontWeight: '500',
+    fontStyle: 'italic',
+    letterSpacing: 1,
   },
 });

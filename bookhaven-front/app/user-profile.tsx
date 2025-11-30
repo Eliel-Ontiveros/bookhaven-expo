@@ -13,15 +13,15 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import Header from '@/components/Header';
+import { Header } from '@/components/ui';
 import { ChatService } from '@/lib/api/chat';
+import { API_CONFIG } from '@/lib/api/config';
 
 interface UserProfile {
     user: {
@@ -79,7 +79,7 @@ export default function UserProfileScreen() {
             setLoading(true);
             setError(null);
 
-            const response = await fetch(`http://192.168.1.69:3000/api/users/${userId}/profile`);
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/users/${userId}/profile`);
             const data = await response.json();
 
             if (!response.ok) {
@@ -209,9 +209,10 @@ export default function UserProfileScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <View style={[styles.container, { backgroundColor: theme.background }]}>
                 <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
                 <Stack.Screen options={{ headerShown: false }} />
+                <Header />
 
                 <LinearGradient
                     colors={theme.gradient as any}
@@ -230,15 +231,16 @@ export default function UserProfileScreen() {
                     <ActivityIndicator size="large" color={theme.tint} />
                     <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Cargando perfil...</Text>
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
     if (error || !profile) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <View style={[styles.container, { backgroundColor: theme.background }]}>
                 <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
                 <Stack.Screen options={{ headerShown: false }} />
+                <Header />
 
                 <LinearGradient
                     colors={theme.gradient as any}
@@ -260,12 +262,12 @@ export default function UserProfileScreen() {
                         <Text style={styles.retryButtonText}>Reintentar</Text>
                     </TouchableOpacity>
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
             <Header />
             <Stack.Screen options={{ headerShown: false }} />
@@ -331,7 +333,7 @@ export default function UserProfileScreen() {
                     )}
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 }
 

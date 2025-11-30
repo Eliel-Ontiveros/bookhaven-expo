@@ -39,6 +39,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "11d24138-5dc3-4a0d-ab6c-94239fda9f5e"
+      }
+    },
+    "owner": "eliel-ontiveros"
   }
 }

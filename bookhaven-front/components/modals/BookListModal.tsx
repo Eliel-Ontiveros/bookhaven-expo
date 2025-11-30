@@ -4,7 +4,7 @@ import {
     View,
     StyleSheet,
 } from 'react-native';
-import BookListView from './BookListView';
+import { BookListView } from '@/components/books';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getThemeColors } from '@/constants/modal-theme';
 

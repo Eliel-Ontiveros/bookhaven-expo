@@ -9,7 +9,7 @@ import {
     Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ImageService } from '../lib/api/images';
+import { ImageService } from '@/lib/api/images';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ChatImageProps {

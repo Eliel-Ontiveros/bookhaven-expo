@@ -19,7 +19,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { apiService } from '@/lib/api/service';
 import { Post, Book } from '@/lib/api/types';
-import BookListSelector from '@/components/BookListSelector';
+import { BookListSelector } from '@/components/books';
 
 interface PostsResponse {
     posts: Post[];

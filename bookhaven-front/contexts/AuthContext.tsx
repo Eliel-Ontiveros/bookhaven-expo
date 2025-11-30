@@ -5,6 +5,7 @@ import { apiService } from '@/lib/api/service';
 import { User } from '@/lib/api/types';
 import { NotificationService } from '@/lib/notifications';
 import NotificationAPIService from '@/lib/api/notifications';
+import * as Notifications from 'expo-notifications';
 
 interface AuthContextType {
   user: User | null;
@@ -50,9 +51,50 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     checkAuthStatus();
-    // Setup notification listeners
-    NotificationService.setupNotificationListeners();
+    // Setup notification listeners with navigation handlers
+    const cleanup = NotificationService.setupNotificationListeners(
+      // Cuando se recibe una notificación (app en foreground)
+      (notification) => {
+        console.log('📬 Notification received in foreground:', notification);
+      },
+      // Cuando el usuario toca una notificación
+      (response) => {
+        console.log('👆 Notification tapped:', response);
+        handleNotificationResponse(response);
+      }
+    );
+
+    return cleanup;
   }, []);
+
+  // Manejar navegación cuando se toca una notificación
+  const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
+    const data = response.notification.request.content.data;
+
+    if (!data) return;
+
+    console.log('🔔 Handling notification data:', data);
+
+    // Navegar según el tipo de notificación
+    if (data.type === 'chat_message' && data.conversationId) {
+      // Navegar al chat
+      router.push({
+        pathname: '/chat/[conversationId]',
+        params: {
+          conversationId: data.conversationId as string,
+          conversationName: (data.senderName as string) || 'Chat'
+        }
+      });
+    } else if (data.type === 'post_comment' && data.postId) {
+      // Navegar al post
+      router.push({
+        pathname: '/post-detail',
+        params: {
+          postId: data.postId as string
+        }
+      });
+    }
+  };
 
   const checkAuthStatus = async () => {
     try {

@@ -13,8 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../constants/theme';
-import { useColorScheme } from '../hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 interface ImagePickerModalProps {
     visible: boolean;

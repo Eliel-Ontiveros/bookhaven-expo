@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { apiService } from '@/lib/api/service';
 import { BookList, Book } from '@/lib/api/types';
-import BookCard from '@/components/BookCard';
+import BookCard from './BookCard';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { BookHavenTheme, getThemeColors, getModalStyles } from '@/constants/modal-theme';
 

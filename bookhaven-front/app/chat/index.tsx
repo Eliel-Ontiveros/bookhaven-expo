@@ -12,14 +12,12 @@ import {
 } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from '../../hooks/use-color-scheme';
-import { Colors } from '../../constants/theme';
-import Header from '../../components/Header';
-
-import ChatList from '../../components/ChatList';
-import { useAuth } from '../../contexts/AuthContext';
-import { ChatService, type Conversation as ChatConversation, type ChatUser } from '../../lib/api/chat';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
+import { Header } from '@/components/ui';
+import { ChatList } from '@/components/chat';
+import { useAuth } from '@/contexts/AuthContext';
+import { ChatService, type Conversation as ChatConversation, type ChatUser } from '@/lib/api/chat';
 
 interface User {
     id: number;
@@ -209,7 +207,7 @@ export default function ChatIndexScreen() {
     }
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
             <Header />
             <Stack.Screen
@@ -270,7 +268,7 @@ export default function ChatIndexScreen() {
                 refreshing={refreshing}
                 currentUserId={user.id.toString()}
             />
-        </SafeAreaView>
+        </View>
     );
 }
 

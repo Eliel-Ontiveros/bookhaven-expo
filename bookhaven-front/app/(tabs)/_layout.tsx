@@ -2,10 +2,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
-import Header from '@/components/Header';
-
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Header, HapticTab, IconSymbol } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 

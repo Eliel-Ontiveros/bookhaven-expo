@@ -7,9 +7,9 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
-import ChatScreen from '../../components/ChatScreen';
-import { useAuth } from '../../contexts/AuthContext';
-import { ChatService, type Message, type ConversationInfo } from '../../lib/api/chat';
+import { ChatScreen } from '@/components/chat';
+import { useAuth } from '@/contexts/AuthContext';
+import { ChatService, type Message, type ConversationInfo } from '@/lib/api/chat';
 
 export default function ConversationScreen() {
     const router = useRouter();
