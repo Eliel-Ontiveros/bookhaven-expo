@@ -45,7 +45,6 @@ export default function RecommendationsScreen() {
   }, []);
 
   useEffect(() => {
-    // Debounce para la búsqueda por autor
     if (filterBy === 'author') {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -53,9 +52,8 @@ export default function RecommendationsScreen() {
 
       debounceTimerRef.current = setTimeout(() => {
         handleSearch();
-      }, 500); // 500ms de debounce para autor
+      }, 500);
     } else {
-      // Para género, búsqueda inmediata
       handleSearch();
     }
 
@@ -85,7 +83,6 @@ export default function RecommendationsScreen() {
     setLoading(false);
   };
 
-  // Función para buscar libros con paginación
   const searchBooks = async (
     query: string,
     page: number = 1,
@@ -134,7 +131,6 @@ export default function RecommendationsScreen() {
         response = await apiService.searchBooks({ query, page, limit: 10 });
       }
 
-      // La respuesta puede tener dos estructuras: con paginación o directa
       let booksData: any[] = [];
       if (response.success && response.data) {
         if (typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
@@ -186,7 +182,6 @@ export default function RecommendationsScreen() {
     setLoadingMore(false);
   };
 
-  // Función debounced para búsqueda
   const debouncedSearch = useCallback((query: string) => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -199,7 +194,6 @@ export default function RecommendationsScreen() {
     }, 500);
   }, [selectedGenre]);
 
-  // Manejar cambios en los filtros
   const handleSearch = () => {
     if (filterBy === 'author') {
       if (authorQuery.trim().length >= 2) {
@@ -268,7 +262,6 @@ export default function RecommendationsScreen() {
   };
 
   const handleNavigation = (section: string) => {
-    // Navegar a sección
   };
 
   const handleScroll = (event: any) => {
@@ -278,7 +271,6 @@ export default function RecommendationsScreen() {
     const HEADER_HEIGHT = 200; // Altura aproximada del header
     const SCROLL_THRESHOLD = 50; // Umbral para activar la animación
 
-    // Mostrar/ocultar botón de scroll to top
     setShowScrollToTop(scrollY > 300);
 
     // Detectar cuando se está cerca del final para scroll infinito

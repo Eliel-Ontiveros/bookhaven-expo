@@ -19,7 +19,6 @@ export async function GET(
             }, { status: 400 });
         }
 
-        // Verificar que el post existe
         const post = await prisma.post.findUnique({
             where: { id: postId }
         });
@@ -100,7 +99,6 @@ export async function POST(
             }, { status: 400 });
         }
 
-        // Verificar que el post existe
         const post = await prisma.post.findUnique({
             where: { id: postId }
         });
@@ -136,7 +134,6 @@ export async function POST(
             }
         };
 
-        // Enviar notificación push al autor del post (si no es el mismo usuario)
         try {
             if (post.userId !== user.id) {
                 const postAuthor = await prisma.user.findUnique({
@@ -157,7 +154,6 @@ export async function POST(
             }
         } catch (notifError) {
             console.error('Error sending push notification:', notifError);
-            // No fallar el request si las notificaciones fallan
         }
 
         return NextResponse.json<APIResponse>({

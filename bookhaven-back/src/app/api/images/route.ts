@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
         console.log('📥 Received params:', { s3Key, allParams: Object.fromEntries(searchParams.entries()) });
 
         if (!s3Key) {
-            console.error('❌ Missing S3 key parameter');
+            console.error(' Missing S3 key parameter');
             return NextResponse.json<APIResponse>({
                 success: false,
                 error: 'Se requiere la clave S3'
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
         // Validar que la clave sea para imágenes
         if (!s3Key.startsWith('images/')) {
-            console.error('❌ Invalid S3 key format:', s3Key);
+            console.error(' Invalid S3 key format:', s3Key);
             return NextResponse.json<APIResponse>({
                 success: false,
                 error: 'Clave S3 inválida'
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
         });
 
     } catch (error) {
-        console.error('❌ Error generating image URL:', error);
+        console.error(' Error generating image URL:', error);
         return NextResponse.json<APIResponse>({
             success: false,
             error: 'Error al generar URL de imagen'
