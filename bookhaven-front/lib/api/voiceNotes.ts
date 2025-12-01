@@ -1,6 +1,6 @@
 import { API_CONFIG, APIResponse } from './config';
 import { UploadVoiceNoteResponse } from './types';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export class VoiceNoteService {
     private static async getAuthHeaders(token: string) {
@@ -20,29 +20,41 @@ export class VoiceNoteService {
         try {
             console.log('🎙️ VoiceNoteService.uploadVoiceNote - URI:', audioUri);
 
-            const formData = new FormData();
+            // Normalizar URL (quitar slash final si existe)
+            const baseUrl = API_CONFIG.BASE_URL.replace(/\/$/, '');
+            const uploadUrl = `${baseUrl}${API_CONFIG.ENDPOINTS.UPLOAD_VOICE}`;
+            console.log('📤 Upload URL:', uploadUrl);
 
-            // Crear el objeto File para React Native
-            const audioFile = {
-                uri: audioUri,
-                type: 'audio/m4a', // iOS por defecto
-                name: fileName,
-            } as any;
-
-            formData.append('audio', audioFile);
-
-            const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.UPLOAD_VOICE}`, {
-                method: 'POST',
-                headers: await this.getAuthHeaders(token),
-                body: formData,
+            // Usar FileSystem.uploadAsync que es más confiable para React Native
+            const uploadResult = await FileSystem.uploadAsync(uploadUrl, audioUri, {
+                httpMethod: 'POST',
+                uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                fieldName: 'audio',
+                mimeType: 'audio/m4a',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                parameters: {
+                    fileName: fileName,
+                },
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `Error uploading voice note: ${response.status}`);
+            console.log('📡 Upload response status:', uploadResult.status);
+            console.log('📡 Upload response body:', uploadResult.body);
+
+            if (uploadResult.status !== 200) {
+                let errorMessage = `Error uploading voice note: ${uploadResult.status}`;
+                try {
+                    const errorData = JSON.parse(uploadResult.body);
+                    errorMessage = errorData.error || errorMessage;
+                } catch {
+                    // Si no es JSON, usar el body como está
+                    errorMessage = uploadResult.body || errorMessage;
+                }
+                throw new Error(errorMessage);
             }
 
-            const data: APIResponse<UploadVoiceNoteResponse> = await response.json();
+            const data: APIResponse<UploadVoiceNoteResponse> = JSON.parse(uploadResult.body);
 
             if (!data.success) {
                 throw new Error(data.error || 'Upload failed');

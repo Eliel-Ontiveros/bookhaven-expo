@@ -1,6 +1,6 @@
 import { API_CONFIG, APIResponse } from './config';
 import { UploadImageResponse } from './types';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export class ImageService {
     private static async getAuthHeaders(token: string) {
@@ -20,8 +20,6 @@ export class ImageService {
         try {
             console.log('🖼️ ImageService.uploadImage - URI:', imageUri);
 
-            const formData = new FormData();
-
             // Determinar el tipo MIME de la imagen
             const fileExtension = imageUri.split('.').pop()?.toLowerCase();
             let mimeType = 'image/jpeg';
@@ -34,27 +32,40 @@ export class ImageService {
                 mimeType = 'image/heic';
             }
 
-            // Crear el objeto File para React Native
-            const imageFile = {
-                uri: imageUri,
-                type: mimeType,
-                name: fileName,
-            } as any;
+            // Normalizar URL (quitar slash final si existe)
+            const baseUrl = API_CONFIG.BASE_URL.replace(/\/$/, '');
+            const uploadUrl = `${baseUrl}${API_CONFIG.ENDPOINTS.UPLOAD_IMAGE}`;
+            console.log('📤 Upload URL:', uploadUrl);
 
-            formData.append('image', imageFile);
-
-            const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.UPLOAD_IMAGE}`, {
-                method: 'POST',
-                headers: await this.getAuthHeaders(token),
-                body: formData,
+            // Usar FileSystem.uploadAsync que es más confiable para React Native
+            const uploadResult = await FileSystem.uploadAsync(uploadUrl, imageUri, {
+                httpMethod: 'POST',
+                uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                fieldName: 'image',
+                mimeType: mimeType,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                parameters: {
+                    fileName: fileName,
+                },
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `Error uploading image: ${response.status}`);
+            console.log('📡 Upload response status:', uploadResult.status);
+            console.log('📡 Upload response body:', uploadResult.body);
+
+            if (uploadResult.status !== 200) {
+                let errorMessage = `Error uploading image: ${uploadResult.status}`;
+                try {
+                    const errorData = JSON.parse(uploadResult.body);
+                    errorMessage = errorData.error || errorMessage;
+                } catch {
+                    errorMessage = uploadResult.body || errorMessage;
+                }
+                throw new Error(errorMessage);
             }
 
-            const data: APIResponse<UploadImageResponse> = await response.json();
+            const data: APIResponse<UploadImageResponse> = JSON.parse(uploadResult.body);
 
             if (!data.success) {
                 throw new Error(data.error || 'Upload failed');
