@@ -108,7 +108,6 @@ export default function RegistroScreen() {
     const formattedDate = birthDate.toISOString().split('T')[0];
 
     try {
-      console.log('📝 Register attempt from UI:', email);
       await register({
         username,
         email,
@@ -116,13 +115,9 @@ export default function RegistroScreen() {
         birthdate: formattedDate,
         favoriteGenres: selectedGenres,
       });
-      console.log('✅ Register completed successfully');
-
-      // Redirigir explícitamente a la pantalla de inicio
-      console.log('🚀 Redirecting to inicio...');
       router.replace('/inicio');
     } catch (error) {
-      console.error('❌ Register failed in UI:', error);
+      console.error('❌ Error en registro:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Error en el registro');
     }
   };

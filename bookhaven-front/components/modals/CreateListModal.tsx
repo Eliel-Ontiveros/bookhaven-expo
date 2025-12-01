@@ -37,11 +37,9 @@ export default function CreateListModal({ visible, onClose, onListCreated }: Cre
 
         setLoading(true);
         try {
-            console.log('📚 Creating new book list:', listName);
             const response = await apiService.createBookList({ name: listName.trim() });
 
             if (response.success) {
-                console.log('✅ List created successfully:', response.data);
                 Alert.alert(
                     'Lista creada',
                     `La lista "${listName}" se ha creado exitosamente`,

@@ -1,0 +1,35 @@
+{
+    "cli": {
+        "version": ">= 3.0.0",
+        "appVersionSource": "remote"
+    },
+    "build": {
+        "development": {
+            "developmentClient": true,
+            "distribution": "internal",
+            "android": {
+                "gradleCommand": ":app:assembleDebug"
+            }
+        },
+        "preview": {
+            "distribution": "internal",
+            "android": {
+                "buildType": "apk"
+            },
+            "env": {
+                "EXPO_NO_CAPABILITY_SYNC": "1"
+            }
+        },
+        "production": {
+            "android": {
+                "buildType": "apk"
+            },
+            "env": {
+                "EXPO_NO_CAPABILITY_SYNC": "1"
+            }
+        }
+    },
+    "submit": {
+        "production": {}
+    }
+}

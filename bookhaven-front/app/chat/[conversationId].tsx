@@ -34,9 +34,6 @@ export default function ConversationScreen() {
     }, [user, token, conversationId]);
 
     const initializeSocket = () => {
-        // Fallback sin Socket.IO - usar polling
-        console.log('Modo de polling activado para mensajes');
-
         // Polling cada 3 segundos para nuevos mensajes
         const pollInterval = setInterval(async () => {
             if (token && conversationId) {
@@ -52,7 +49,7 @@ export default function ConversationScreen() {
                         return prev;
                     });
                 } catch (error) {
-                    console.log('Error en polling:', error);
+                    // Error silencioso en polling
                 }
             }
         }, 3000);
@@ -110,13 +107,11 @@ export default function ConversationScreen() {
     };
 
     const handleTypingStart = () => {
-        // Deshabilitado por ahora (sin Socket.IO)
-        console.log('Typing start (disabled)');
+        // Deshabilitado (sin Socket.IO)
     };
 
     const handleTypingStop = () => {
-        // Deshabilitado por ahora (sin Socket.IO)
-        console.log('Typing stop (disabled)');
+        // Deshabilitado (sin Socket.IO)
     };
 
     if (!user || !conversationId) {

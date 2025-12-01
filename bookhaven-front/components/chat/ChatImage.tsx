@@ -66,8 +66,6 @@ export default function ChatImage({
                 return;
             }
 
-            console.log('🖼️ ChatImage: Loading image with S3 key:', imageUrl);
-
             const token = await AsyncStorage.getItem('authToken');
             if (!token) {
                 throw new Error('No token');

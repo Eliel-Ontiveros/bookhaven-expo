@@ -140,12 +140,6 @@ export default function ChatScreen({
                 bookId: book.id
             });
 
-            console.log('📚 Enviando libro compartido:', {
-                title: book.title,
-                author: book.authors,
-                bookId: book.id
-            });
-
             await onSendMessage(bookMessage, 'BOOK_RECOMMENDATION');
         } catch (error) {
             Alert.alert('Error', 'No se pudo compartir el libro');
@@ -188,12 +182,8 @@ export default function ChatScreen({
             // Generar nombre único para el archivo
             const fileName = `voice-note-${Date.now()}.m4a`;
 
-            console.log('🎙️ Subiendo nota de voz:', { fileName, duration });
-
             // Subir nota de voz a S3
             const uploadResult = await VoiceNoteService.uploadVoiceNote(audioUri, fileName, token);
-
-            console.log('✅ Nota de voz subida:', uploadResult);
 
             // Enviar mensaje de voz
             await VoiceNoteService.sendVoiceMessage(
@@ -248,12 +238,8 @@ export default function ChatScreen({
             // Generar nombre único para el archivo
             const fileName = `image-${Date.now()}.jpg`;
 
-            console.log('🖼️ Subiendo imagen:', { fileName, width, height });
-
             // Subir imagen a S3
             const uploadResult = await ImageService.uploadImage(imageUri, fileName, token);
-
-            console.log('✅ Imagen subida:', uploadResult);
 
             // Enviar mensaje de imagen
             await ImageService.sendImageMessage(
@@ -315,17 +301,8 @@ export default function ChatScreen({
 
         const renderMessageContent = () => {
             if (item.messageType === 'IMAGE') {
-                console.log('🖼️ Rendering image:', {
-                    messageId: item.id,
-                    imageUrl: item.imageUrl,
-                    imageWidth: item.imageWidth,
-                    imageHeight: item.imageHeight,
-                    content: item.content,
-                    fullMessage: item
-                });
-
                 if (!item.imageUrl) {
-                    console.error('❌ Message has type IMAGE but no imageUrl:', item);
+                    console.error('❌ Mensaje IMAGE sin imageUrl:', item.id);
                     return (
                         <View style={{ padding: 12 }}>
                             <Text style={{ color: isOwnMessage ? '#fff' : '#666' }}>
@@ -346,13 +323,6 @@ export default function ChatScreen({
             }
 
             if (item.messageType === 'VOICE_NOTE') {
-                console.log('🎵 Rendering voice note:', {
-                    audioUrl: item.audioUrl,
-                    audioDuration: item.audioDuration,
-                    audioSize: item.audioSize,
-                    messageContent: item.content
-                });
-
                 return (
                     <VoicePlayer
                         audioUrl={item.audioUrl || ''}
@@ -366,7 +336,6 @@ export default function ChatScreen({
             if (item.messageType === 'BOOK_RECOMMENDATION') {
                 try {
                     const bookData = JSON.parse(item.content);
-                    console.log('📖 Datos del libro parseados:', bookData);
                     return (
                         <TouchableOpacity
                             style={[
@@ -388,9 +357,6 @@ export default function ChatScreen({
                                     image: bookData.image
                                 };
 
-                                console.log('📖 Navegando a detalle del libro:', bookObject);
-
-                                // Navegar al detalle del libro
                                 router.push({
                                     pathname: '/book-detail',
                                     params: {

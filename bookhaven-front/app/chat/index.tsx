@@ -52,8 +52,7 @@ export default function ChatIndexScreen() {
     useFocusEffect(
         useCallback(() => {
             if (user && token) {
-                console.log('📱 Pantalla de chat en foco - refrescando conversaciones...');
-                loadConversations(false); // Refresh silencioso sin mostrar loading
+                loadConversations(false);
             }
         }, [user, token])
     );
@@ -67,9 +66,7 @@ export default function ChatIndexScreen() {
             } else {
                 setRefreshing(true);
             }
-            console.log('🔄 Cargando conversaciones...');
             const conversationData = await ChatService.getConversations(token);
-            console.log('💬 Conversaciones cargadas:', conversationData);
             setConversations(conversationData);
         } catch (error) {
             console.error('❌ Error al cargar conversaciones:', error);
@@ -111,13 +108,11 @@ export default function ChatIndexScreen() {
 
         setIsSearching(true);
         try {
-            console.log('🔍 Buscando usuarios con:', query);
             const users = await ChatService.searchUsers(query, token);
 
             // Filtrar el usuario actual de los resultados
             const filteredUsers = users.filter(u => u.id !== user?.id.toString());
             setSearchResults(filteredUsers);
-            console.log('👥 Usuarios encontrados:', filteredUsers);
         } catch (error) {
             console.error('❌ Error en búsqueda:', error);
             Alert.alert('Error', 'No se pudieron buscar usuarios');
@@ -131,8 +126,6 @@ export default function ChatIndexScreen() {
         if (!token) return;
 
         try {
-            console.log('💬 Iniciando chat con:', selectedUser.username);
-
             const conversation = await ChatService.createConversation(
                 [selectedUser.id],
                 false,

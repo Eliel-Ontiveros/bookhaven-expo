@@ -37,27 +37,23 @@ export default function ProfileScreen() {
 
   const loadBookLists = async () => {
     try {
-      console.log('📚 Loading book lists...');
       const listsResponse = await apiService.getBookLists();
-      console.log('📚 Book lists response:', listsResponse);
 
       if (listsResponse.success && listsResponse.data) {
         const bookListsData = Array.isArray(listsResponse.data) ? listsResponse.data : [];
         setBookLists(bookListsData);
-        console.log('✅ Book lists loaded:', bookListsData.length);
       } else {
-        console.log('❌ Failed to load book lists:', listsResponse.error);
-        setBookLists([]); // Asegurar que siempre sea un array
+        setBookLists([]);
       }
     } catch (error) {
-      console.error('❌ Error loading book lists:', error);
-      setBookLists([]); // Asegurar que siempre sea un array
+      console.error('❌ Error cargando listas:', error);
+      setBookLists([]);
     }
     setLoading(false);
   };
 
   const handleNavigation = (section: string) => {
-    console.log('Navigate to:', section);
+    // Navegar a sección
   };
 
   const handleListSelection = (listId: string) => {

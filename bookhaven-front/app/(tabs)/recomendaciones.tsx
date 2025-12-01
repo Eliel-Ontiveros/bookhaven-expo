@@ -70,18 +70,16 @@ export default function RecommendationsScreen() {
   const loadInitialBooks = async () => {
     setLoading(true);
     try {
-      console.log('🌟 Loading user recommendations...');
       const response = await apiService.getUserRecommendations();
 
       if (response.success && response.data && Array.isArray(response.data) && response.data.length > 0) {
         setBooks(response.data);
-        setHasMore(false); // Las recomendaciones del usuario son limitadas
+        setHasMore(false);
       } else {
-        // Si no hay recomendaciones personalizadas, cargar libros de ficción por defecto
         await searchBooks('fiction', 1, true);
       }
     } catch (error) {
-      console.error('❌ Error loading recommendations:', error);
+      console.error('❌ Error cargando recomendaciones:', error);
       await searchBooks('fiction', 1, true);
     }
     setLoading(false);
@@ -105,23 +103,14 @@ export default function RecommendationsScreen() {
     try {
       let response;
 
-      console.log(`🔍 Searching with filter: ${filterBy}, genre: ${selectedGenre}, author: ${authorQuery}`);
-
       if (filterBy === 'genre' && selectedGenre) {
-        console.log(`🎭 Searching books by genre: ${selectedGenre}`);
         response = await apiService.searchBooksByGenre(selectedGenre, page, 10);
       } else if (filterBy === 'author' && authorQuery.trim()) {
-        console.log(`👤 Searching books by author: ${authorQuery}`);
-
-        // Validar que el nombre del autor tenga al menos 2 caracteres para una búsqueda efectiva
         if (authorQuery.trim().length < 2) {
-          console.log('👤 Author query too short, loading initial books');
           response = await apiService.searchBooks({ query: 'bestseller', page, limit: 10 });
         } else {
-          // Mejorar la búsqueda por autor con retry si no encuentra resultados
           response = await apiService.searchBooksByAuthor(authorQuery.trim(), page, 10);
 
-          // Si no encuentra resultados en la primera página, intentar con una búsqueda más amplia
           if (response.success && page === 1) {
             let booksData: any[] = [];
 
@@ -131,10 +120,8 @@ export default function RecommendationsScreen() {
               booksData = Array.isArray((response.data as any).data) ? (response.data as any).data : [];
             }
 
-            // Si no hay resultados, intentar búsqueda más flexible
             if (booksData.length === 0) {
-              console.log(`👤 No results for "${authorQuery}", trying broader search...`);
-              const fallbackQuery = authorQuery.split(' ')[0]; // Usar solo el primer nombre/apellido
+              const fallbackQuery = authorQuery.split(' ')[0];
               response = await apiService.searchBooks({
                 query: `inauthor:${fallbackQuery}`,
                 page,
@@ -144,46 +131,23 @@ export default function RecommendationsScreen() {
           }
         }
       } else {
-        // Búsqueda por defecto
-        console.log(`🔍 Default search with query: ${query}`);
         response = await apiService.searchBooks({ query, page, limit: 10 });
       }
-
-      console.log('📡 API Response:', { success: response.success, dataType: typeof response.data, hasData: !!response.data });
 
       // La respuesta puede tener dos estructuras: con paginación o directa
       let booksData: any[] = [];
       if (response.success && response.data) {
-        // Si la respuesta tiene estructura de paginación
         if (typeof response.data === 'object' && 'data' in response.data && Array.isArray(response.data.data)) {
           booksData = response.data.data;
-          console.log(`📦 Found books in paginated response: ${booksData.length}`);
-        }
-        // Si la respuesta es directamente un array
-        else if (Array.isArray(response.data)) {
+        } else if (Array.isArray(response.data)) {
           booksData = response.data;
-          console.log(`📦 Found books in direct response: ${booksData.length}`);
         }
       }
 
       if (booksData.length > 0) {
-        console.log(`✅ Processing ${booksData.length} books from API`);
         const newBooks = booksData.map((book: any, index: number) => {
-          // Validar que el objeto book existe y tiene las propiedades necesarias
           if (!book || typeof book !== 'object') {
-            console.warn(`⚠️ Invalid book object at index ${index}:`, book);
             return null;
-          }
-
-          // Log para debuggear datos problemáticos
-          if (index < 3) {
-            console.log(`📖 Processing book ${index}:`, {
-              id: book.id,
-              title: book.title,
-              authors: book.authors,
-              titleType: typeof book.title,
-              authorsType: typeof book.authors
-            });
           }
 
           const processedBook = {
@@ -196,31 +160,18 @@ export default function RecommendationsScreen() {
             image: book.image && typeof book.image === 'string' ? book.image : (book.coverUrl && typeof book.coverUrl === 'string' ? book.coverUrl : undefined),
           };
 
-          // Validar el resultado final
-          Object.keys(processedBook).forEach(key => {
-            const value = processedBook[key as keyof typeof processedBook];
-            if (value === null || (typeof value === 'string' && value.includes('null'))) {
-              console.warn(`⚠️ Potential null value in ${key}:`, value);
-            }
-          });
-
           return processedBook;
-        }).filter(book => book !== null); // Filtrar libros inválidos
+        }).filter(book => book !== null);
 
         if (reset) {
-          console.log(`📚 Setting ${newBooks.length} books (reset)`);
           setBooks(newBooks);
         } else {
-          console.log(`📚 Adding ${newBooks.length} more books`);
           setBooks(prevBooks => [...prevBooks, ...newBooks]);
         }
 
         setCurrentPage(page);
-        setHasMore(newBooks.length === 10); // Si trae menos de 10, no hay más
-
-        console.log(`✅ Books loaded: ${newBooks.length} (page ${page})`);
+        setHasMore(newBooks.length === 10);
       } else {
-        console.log('❌ No books found or invalid response structure');
         if (reset) {
           setBooks([]);
         }
@@ -250,71 +201,44 @@ export default function RecommendationsScreen() {
 
   // Manejar cambios en los filtros
   const handleSearch = () => {
-    console.log('🔍 Handling search with:', { filterBy, selectedGenre, authorQuery });
-    console.log('🔍 Current state check:', {
-      filterBy,
-      selectedGenre: `"${selectedGenre}"`,
-      authorQuery: `"${authorQuery}"`,
-      selectedGenreLength: selectedGenre.length,
-      authorQueryLength: authorQuery.length
-    });
-
     if (filterBy === 'author') {
       if (authorQuery.trim().length >= 2) {
-        console.log('📚 Searching by author:', authorQuery);
         searchBooks(authorQuery, 1, true);
       } else if (authorQuery.trim().length === 0) {
-        // Si se borra todo el texto de autor, cargar libros iniciales
-        console.log('🌟 Loading initial books (empty author)');
         loadInitialBooks();
       }
-      // No hacer nada si hay 1 caracter (esperar más entrada)
     } else if (filterBy === 'genre' && selectedGenre) {
-      console.log('🎭 Searching by genre:', selectedGenre);
       searchBooks(selectedGenre, 1, true);
     } else {
-      // Si no hay filtros activos, mostrar recomendaciones generales
-      console.log('🌟 Loading general recommendations (no filters active)');
       loadInitialBooks();
     }
   };
 
   // Manejar cambios en los filtros
   const handleFilterChange = (filter: 'author' | 'genre') => {
-    console.log('🔄 Changing filter to:', filter);
     setFilterBy(filter);
     setSelectedGenre('');
     setAuthorQuery('');
     setCurrentPage(1);
-    setBooks([]); // Limpiar libros al cambiar filtro
+    setBooks([]);
     setHasMore(true);
 
     if (filter === 'genre') {
-      // Al cambiar a filtro por género, mostrar recomendaciones generales
-      console.log('🎭 Switched to genre filter - loading general recommendations');
       loadInitialBooks();
-    } else {
-      // Al cambiar a filtro por autor, limpiar resultados
-      console.log('👤 Switched to author filter - awaiting author input');
     }
   };
 
   const handleGenreChange = (genre: string) => {
-    console.log('🎭 Genre selected:', genre);
     setSelectedGenre(genre);
   };
 
   const handleAuthorChange = (author: string) => {
-    console.log('👤 Author query changed:', author);
     setAuthorQuery(author);
-
-    // Reset pagination cuando cambia la búsqueda
     setCurrentPage(1);
     setHasMore(true);
   };
 
   const handleBookPress = (book: Book) => {
-    console.log('📖 Navigating to book details:', book.title);
     router.push({
       pathname: '/book-detail',
       params: {
@@ -334,21 +258,17 @@ export default function RecommendationsScreen() {
   const handleLoadMore = () => {
     if (!loadingMore && hasMore) {
       const nextPage = currentPage + 1;
-      console.log(`⬇️ Loading more books - page ${nextPage}`);
 
       if (filterBy === 'genre' && selectedGenre) {
         searchBooks(selectedGenre, nextPage, false);
       } else if (filterBy === 'author' && authorQuery.trim()) {
         searchBooks(authorQuery.trim(), nextPage, false);
-      } else {
-        // Para recomendaciones generales no se permite paginación
-        console.log('⚠️ Load more not available for general recommendations');
       }
     }
   };
 
   const handleNavigation = (section: string) => {
-    console.log('Navigate to:', section);
+    // Navegar a sección
   };
 
   const handleScroll = (event: any) => {
@@ -365,7 +285,6 @@ export default function RecommendationsScreen() {
     const isNearEnd = scrollY + scrollViewHeight >= contentHeight - 100; // 100px antes del final
 
     if (isNearEnd && !loadingMore && hasMore && books.length > 0) {
-      console.log('📱 Near end detected, triggering load more...');
       handleLoadMore();
     }
 

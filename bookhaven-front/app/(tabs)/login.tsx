@@ -33,15 +33,10 @@ export default function LoginScreen() {
     }
 
     try {
-      console.log('🔐 Login attempt from UI:', email);
       await login(email, password);
-      console.log('✅ Login completed successfully');
-
-      // Redirigir explícitamente a la pantalla de inicio
-      console.log('🚀 Redirecting to inicio...');
       router.replace('/inicio');
     } catch (error) {
-      console.error('❌ Login failed in UI:', error);
+      console.error('❌ Error en login:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Error al iniciar sesión');
     }
   };

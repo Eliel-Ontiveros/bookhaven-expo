@@ -46,8 +46,6 @@ export default function VoicePlayer({
         }
 
         try {
-            console.log('🔑 Getting signed URL for audioUrl:', audioUrl);
-
             const token = await AsyncStorage.getItem('authToken');
             if (!token) {
                 throw new Error('No token available');

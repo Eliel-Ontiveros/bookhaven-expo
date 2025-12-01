@@ -8,7 +8,6 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
 import { Book } from '@/lib/api/types';
 
 interface SearchResultsProps {
@@ -32,13 +31,7 @@ export default function SearchResults({
   const renderBookItem = ({ item }: { item: Book }) => (
     <TouchableOpacity
       style={styles.bookCard}
-      onPress={() => {
-        onBookPress(item);
-        router.push({
-          pathname: '/book-detail',
-          params: { book: JSON.stringify(item) }
-        });
-      }}
+      onPress={() => onBookPress(item)}
     >
       <View style={styles.bookCover}>
         {item.image ? (

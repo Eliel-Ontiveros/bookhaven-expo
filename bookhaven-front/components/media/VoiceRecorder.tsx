@@ -136,8 +136,6 @@ export default function VoiceRecorder({
 
             // Haptic feedback al iniciar
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-            console.log('🎙️ Recording started');
         } catch (error) {
             console.error('Error starting recording:', error);
             Alert.alert('Error', 'No se pudo iniciar la grabación');
@@ -160,7 +158,6 @@ export default function VoiceRecorder({
                 // Haptic feedback al completar
                 await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-                console.log('✅ Recording completed:', { uri, duration: durationRef.current });
                 onRecordingComplete(uri, durationRef.current);
             }
 

@@ -79,24 +79,18 @@ export default function HomeScreen() {
     try {
       // En la primera página, cargar recomendaciones del usuario
       if (page === 1) {
-        console.log(`🌟 Loading user recommendations...`);
         const response = await apiService.getUserRecommendations();
-        console.log('🌟 Recommendations response:', response);
 
         if (response.success && response.data) {
           const recommendationsData = Array.isArray(response.data) ? response.data : [];
           setRecommendedBooks(recommendationsData);
           setCurrentPage(1);
-          // Si hay recomendaciones, permitir cargar más libros populares
           setHasMore(recommendationsData.length >= 10);
-          console.log('✅ Recommendations loaded:', recommendationsData.length);
         } else {
-          console.log('❌ Failed to load recommendations, loading popular books');
           await loadPopularBooks(1, true);
         }
       } else {
         // Para páginas siguientes, cargar libros populares adicionales
-        console.log(`📚 Loading more books (page ${page})...`);
         await loadPopularBooks(page, false);
       }
     } catch (error) {
@@ -120,8 +114,6 @@ export default function HomeScreen() {
     }
 
     try {
-      console.log(`📚 Loading popular books... (page ${page})`);
-
       const popularQueries = ['bestseller', 'fiction', 'novel'];
       const query = popularQueries[Math.floor(Math.random() * popularQueries.length)];
 
@@ -144,7 +136,6 @@ export default function HomeScreen() {
 
         setCurrentPage(page);
         setHasMore(booksData.length === 20);
-        console.log('✅ Popular books loaded:', booksData.length);
       }
     } catch (error) {
       console.error('❌ Error loading popular books:', error);
@@ -175,11 +166,7 @@ export default function HomeScreen() {
   const performSearch = async (query: string) => {
     setIsSearching(true);
     try {
-      console.log('🔍 Searching for:', query);
-
-      // Mejorar la búsqueda para hacerla más flexible
       const enhancedQuery = enhanceSearchQuery(query.trim());
-      console.log('🔧 Enhanced query:', enhancedQuery);
 
       const response = await apiService.searchBooks({
         query: enhancedQuery,
@@ -187,21 +174,16 @@ export default function HomeScreen() {
       });
 
       if (response.success && response.data) {
-        // Manejar estructura de respuesta con paginación
         let books: any[] = [];
 
         if (Array.isArray(response.data)) {
-          // Respuesta directa
           books = response.data;
         } else if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-          // Respuesta con paginación
           books = Array.isArray((response.data as any).data) ? (response.data as any).data : [];
         }
 
-        console.log('✅ Search successful:', books.length, 'books found');
         setSearchResults(books);
       } else {
-        console.log('❌ Search failed:', response.error);
         setSearchResults([]);
       }
     } catch (error) {
@@ -251,7 +233,6 @@ export default function HomeScreen() {
   };
 
   const handleBookPress = (book: Book) => {
-    console.log('📖 Navigating to book details:', book.title);
     router.push({
       pathname: '/book-detail',
       params: {
@@ -269,7 +250,7 @@ export default function HomeScreen() {
   };
 
   const handleNavigation = (section: string) => {
-    console.log('Navigate to:', section);
+    // Navegar a sección
   };
 
   const clearSearch = () => {
@@ -282,7 +263,6 @@ export default function HomeScreen() {
   const handleLoadMore = () => {
     if (!loadingMore && hasMore && !searchQuery.trim()) {
       const nextPage = currentPage + 1;
-      console.log(`⬇️ Loading more books - page ${nextPage}`);
 
       if (user) {
         loadRecommendations(nextPage, false);
@@ -305,7 +285,6 @@ export default function HomeScreen() {
     const isNearEnd = scrollY + scrollViewHeight >= contentHeight - 100;
 
     if (isNearEnd && !loadingMore && hasMore && recommendedBooks.length > 0 && !searchQuery.trim()) {
-      console.log('📱 Near end detected, triggering load more...');
       handleLoadMore();
     }
   };

@@ -55,11 +55,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const cleanup = NotificationService.setupNotificationListeners(
       // Cuando se recibe una notificación (app en foreground)
       (notification) => {
-        console.log('📬 Notification received in foreground:', notification);
+        // Notificación recibida en foreground
       },
       // Cuando el usuario toca una notificación
       (response) => {
-        console.log('👆 Notification tapped:', response);
         handleNotificationResponse(response);
       }
     );
@@ -72,8 +71,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const data = response.notification.request.content.data;
 
     if (!data) return;
-
-    console.log('🔔 Handling notification data:', data);
 
     // Navegar según el tipo de notificación
     if (data.type === 'chat_message' && data.conversationId) {
@@ -99,30 +96,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const checkAuthStatus = async () => {
     try {
       const savedToken = await AsyncStorage.getItem('authToken');
-      console.log('🔍 Checking token:', savedToken ? 'exists' : 'not found');
 
       if (savedToken) {
         setToken(savedToken);
         const response = await apiService.getCurrentUser();
-        console.log('👤 User check response:', response);
 
         if (response.success && response.data) {
           setUser(response.data);
-          console.log('✅ User authenticated:', response.data.username);
+          console.log('✅ Usuario autenticado:', response.data.username);
 
           // Register for push notifications
           try {
             const pushToken = await NotificationService.registerForPushNotificationsAsync();
             if (pushToken) {
               await NotificationAPIService.registerPushToken(pushToken);
-              console.log('🔔 Push token registered successfully');
             }
           } catch (notifError) {
-            console.error('⚠️ Failed to register push notifications:', notifError);
-            // Don't fail auth if notifications fail
+            console.error('⚠️ Error registrando notificaciones:', notifError);
           }
         } else {
-          console.log('❌ Token invalid, removing...');
           await AsyncStorage.removeItem('authToken');
           setToken(null);
         }
@@ -139,16 +131,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (email: string, password: string): Promise<void> => {
     setLoading(true);
     try {
-      console.log('🔐 Attempting login for:', email);
-
       const response = await apiService.login({ email, password });
-      console.log('🔐 Login response:', response);
 
       if (response.success && response.data) {
-        console.log('✅ Login successful, saving token...');
-        console.log('🔑 Token received:', response.data.token ? 'YES' : 'NO');
-        console.log('👤 User data:', response.data.user);
-
         if (!response.data.token) {
           throw new Error('No se recibió el token de autenticación');
         }
@@ -156,18 +141,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         await AsyncStorage.setItem('authToken', response.data.token);
         setToken(response.data.token);
         setUser(response.data.user);
-        console.log('👤 User logged in:', response.data.user.username);
+        console.log('✅ Login exitoso:', response.data.user.username);
 
         // Register for push notifications
         try {
           const pushToken = await NotificationService.registerForPushNotificationsAsync();
           if (pushToken) {
             await NotificationAPIService.registerPushToken(pushToken);
-            console.log('🔔 Push token registered successfully');
           }
         } catch (notifError) {
-          console.error('⚠️ Failed to register push notifications:', notifError);
-          // Don't fail login if notifications fail
+          console.error('⚠️ Error registrando notificaciones:', notifError);
         }
       } else {
         throw new Error(response.error || 'Error al iniciar sesión');
@@ -183,16 +166,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const register = async (userData: RegisterData): Promise<void> => {
     setLoading(true);
     try {
-      console.log('📝 Attempting registration for:', userData.email);
-
       const response = await apiService.register(userData);
-      console.log('📝 Register response:', response);
 
       if (response.success && response.data) {
-        console.log('✅ Registration successful, saving token...');
-        console.log('🔑 Token received:', response.data.token ? 'YES' : 'NO');
-        console.log('👤 User data:', response.data.user);
-
         if (!response.data.token) {
           throw new Error('No se recibió el token de autenticación');
         }
@@ -200,18 +176,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         await AsyncStorage.setItem('authToken', response.data.token);
         setToken(response.data.token);
         setUser(response.data.user);
-        console.log('👤 User registered:', response.data.user.username);
+        console.log('✅ Registro exitoso:', response.data.user.username);
 
         // Register for push notifications
         try {
           const pushToken = await NotificationService.registerForPushNotificationsAsync();
           if (pushToken) {
             await NotificationAPIService.registerPushToken(pushToken);
-            console.log('🔔 Push token registered successfully');
           }
         } catch (notifError) {
-          console.error('⚠️ Failed to register push notifications:', notifError);
-          // Don't fail registration if notifications fail
+          console.error('⚠️ Error registrando notificaciones:', notifError);
         }
       } else {
         throw new Error(response.error || 'Error al registrar usuario');
@@ -226,24 +200,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = async (): Promise<void> => {
     try {
-      console.log('🚪 Logging out user...');
-
       // Unregister push token
       try {
         await NotificationAPIService.unregisterPushToken();
-        console.log('🔔 Push token unregistered successfully');
       } catch (notifError) {
-        console.error('⚠️ Failed to unregister push notifications:', notifError);
-        // Continue with logout even if unregister fails
+        console.error('⚠️ Error desregistrando notificaciones:', notifError);
       }
 
       await AsyncStorage.removeItem('authToken');
       setUser(null);
       setToken(null);
-      console.log('✅ Logout successful');
+      console.log('✅ Sesión cerrada');
 
-      // Redirigir al login después del logout
-      console.log('🚀 Redirecting to login...');
       router.replace('/login');
     } catch (error) {
       console.error('❌ Logout error:', error);

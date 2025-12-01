@@ -140,7 +140,7 @@ export default function BookDetailScreen() {
                 bookId={book.id}
                 size="medium"
                 onRatingChange={(rating) => {
-                  console.log('User rated book:', rating);
+                  // Rating actualizado
                 }}
               />
             </View>
@@ -191,7 +191,7 @@ export default function BookDetailScreen() {
         onClose={() => setShowAddToListModal(false)}
         book={book as Book}
         onSuccess={() => {
-          console.log('Book added to list successfully');
+          // Libro agregado exitosamente
         }}
       />
 
