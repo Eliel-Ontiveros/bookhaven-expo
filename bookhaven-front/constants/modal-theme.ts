@@ -89,25 +89,25 @@ export const BookHavenTheme = {
 
     shadows: {
         small: {
-            shadowColor: '#000',
+            shadowColor: '#8B4513',
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
+            shadowOpacity: 0.12,
+            shadowRadius: 6,
+            elevation: 4,
         },
         medium: {
-            shadowColor: '#000',
+            shadowColor: '#8B4513',
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
-            elevation: 6,
+            shadowOpacity: 0.18,
+            shadowRadius: 12,
+            elevation: 8,
         },
         large: {
-            shadowColor: '#000',
+            shadowColor: '#8B4513',
             shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.2,
-            shadowRadius: 16,
-            elevation: 10,
+            shadowOpacity: 0.22,
+            shadowRadius: 20,
+            elevation: 14,
         },
     },
 
@@ -156,7 +156,7 @@ export const getModalStyles = (isDark: boolean = false) => {
         // Overlay para modales transparentes
         overlay: {
             flex: 1,
-            backgroundColor: colors.overlay,
+            backgroundColor: 'rgba(47, 27, 20, 0.65)',
             justifyContent: 'center' as const,
             alignItems: 'center' as const,
             padding: BookHavenTheme.spacing.lg,
@@ -165,11 +165,13 @@ export const getModalStyles = (isDark: boolean = false) => {
         // Modal content
         modalContent: {
             backgroundColor: colors.background,
-            borderRadius: BookHavenTheme.borderRadius.xl,
-            padding: BookHavenTheme.spacing.xl,
+            borderRadius: 28,
+            padding: BookHavenTheme.spacing.xxl,
             width: '100%' as const,
             maxWidth: 400,
             ...BookHavenTheme.shadows.large,
+            borderWidth: 1,
+            borderColor: 'rgba(139, 69, 19, 0.08)',
         },
 
         // Header styles
@@ -178,42 +180,46 @@ export const getModalStyles = (isDark: boolean = false) => {
             alignItems: 'center' as const,
             justifyContent: 'space-between' as const,
             paddingHorizontal: BookHavenTheme.spacing.lg,
-            paddingVertical: BookHavenTheme.spacing.md,
+            paddingVertical: BookHavenTheme.spacing.lg,
             borderBottomWidth: 1,
-            borderBottomColor: colors.gray,
+            borderBottomColor: 'rgba(139, 69, 19, 0.1)',
+            backgroundColor: '#FFFAF5',
         },
 
         headerTitle: {
             ...BookHavenTheme.typography.subtitle,
             color: colors.primary,
             textAlign: 'center' as const,
+            fontWeight: '700' as const,
+            letterSpacing: 0.3,
         },
 
         closeButton: {
-            width: 40,
-            height: 40,
+            width: 36,
+            height: 36,
             justifyContent: 'center' as const,
             alignItems: 'center' as const,
-            borderRadius: BookHavenTheme.borderRadius.md,
-            backgroundColor: colors.lightGray,
+            borderRadius: 18,
+            backgroundColor: '#F0E8E0',
         },
 
         // Button styles
         primaryButton: {
             backgroundColor: colors.primary,
-            paddingVertical: BookHavenTheme.spacing.md,
+            paddingVertical: 14,
             paddingHorizontal: BookHavenTheme.spacing.xl,
-            borderRadius: BookHavenTheme.borderRadius.md,
+            borderRadius: 24,
             alignItems: 'center' as const,
             justifyContent: 'center' as const,
-            ...BookHavenTheme.shadows.small,
+            flexDirection: 'row' as const,
+            ...BookHavenTheme.shadows.medium,
         },
 
         secondaryButton: {
             backgroundColor: colors.secondary,
-            paddingVertical: BookHavenTheme.spacing.md,
+            paddingVertical: 14,
             paddingHorizontal: BookHavenTheme.spacing.xl,
-            borderRadius: BookHavenTheme.borderRadius.md,
+            borderRadius: 24,
             alignItems: 'center' as const,
             justifyContent: 'center' as const,
             ...BookHavenTheme.shadows.small,
@@ -222,10 +228,10 @@ export const getModalStyles = (isDark: boolean = false) => {
         outlineButton: {
             backgroundColor: 'transparent',
             borderWidth: 2,
-            borderColor: colors.gray,
-            paddingVertical: BookHavenTheme.spacing.md,
+            borderColor: 'rgba(139, 69, 19, 0.25)',
+            paddingVertical: 14,
             paddingHorizontal: BookHavenTheme.spacing.xl,
-            borderRadius: BookHavenTheme.borderRadius.md,
+            borderRadius: 24,
             alignItems: 'center' as const,
             justifyContent: 'center' as const,
         },
@@ -233,21 +239,23 @@ export const getModalStyles = (isDark: boolean = false) => {
         buttonText: {
             ...BookHavenTheme.typography.button,
             color: colors.white,
+            letterSpacing: 0.3,
         },
 
         outlineButtonText: {
             ...BookHavenTheme.typography.button,
-            color: colors.text,
+            color: colors.primary,
+            letterSpacing: 0.3,
         },
 
         // Input styles
         input: {
-            backgroundColor: colors.surface,
-            borderWidth: 2,
-            borderColor: colors.gray,
-            borderRadius: BookHavenTheme.borderRadius.md,
-            paddingHorizontal: BookHavenTheme.spacing.md,
-            paddingVertical: BookHavenTheme.spacing.md,
+            backgroundColor: '#FFFAF5',
+            borderWidth: 1.5,
+            borderColor: 'rgba(139, 69, 19, 0.2)',
+            borderRadius: 16,
+            paddingHorizontal: BookHavenTheme.spacing.lg,
+            paddingVertical: 14,
             fontSize: BookHavenTheme.typography.body.fontSize,
             color: colors.text,
         },
@@ -283,10 +291,14 @@ export const getModalStyles = (isDark: boolean = false) => {
         listItem: {
             flexDirection: 'row' as const,
             alignItems: 'center' as const,
-            backgroundColor: colors.surface,
+            backgroundColor: '#FFFAF5',
             padding: BookHavenTheme.spacing.lg,
-            borderRadius: BookHavenTheme.borderRadius.lg,
+            borderRadius: 16,
             marginBottom: BookHavenTheme.spacing.sm,
+            borderWidth: 1,
+            borderColor: 'rgba(139, 69, 19, 0.1)',
+            borderLeftWidth: 4,
+            borderLeftColor: colors.primary,
             ...BookHavenTheme.shadows.small,
         },
 

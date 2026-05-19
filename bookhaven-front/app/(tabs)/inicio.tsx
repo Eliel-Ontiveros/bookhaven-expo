@@ -506,7 +506,7 @@ export default function HomeScreen() {
                     </Text>
                     <TouchableOpacity
                       style={[styles.exploreButton, { backgroundColor: theme.tint }]}
-                      onPress={() => router.push('/explore' as any)}
+                      onPress={() => router.push('/recomendaciones' as any)}
                     >
                       <Text style={styles.exploreButtonText}>🔍 Explorar Catálogo</Text>
                     </TouchableOpacity>

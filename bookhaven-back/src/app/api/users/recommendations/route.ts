@@ -58,7 +58,9 @@ async function fetchGoogleBooksRecommendations(
 
             console.log(`🔍 Searching Google Books for genre: ${genre} (${searchTerm})`);
 
-            const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&orderBy=relevance&langRestrict=en`;
+            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY;
+            const keyParam = apiKey ? `&key=${apiKey}` : '';
+            const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&orderBy=relevance&langRestrict=en${keyParam}`;
 
             const response = await fetch(googleBooksUrl, {
                 headers: {
