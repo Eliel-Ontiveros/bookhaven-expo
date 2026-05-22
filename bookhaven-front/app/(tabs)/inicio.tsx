@@ -426,6 +426,42 @@ export default function HomeScreen() {
               </LinearGradient>
             </TouchableOpacity>
 
+            {/* AR Scanner Card */}
+            <TouchableOpacity
+              style={styles.arScannerCard}
+              onPress={() => router.push('/ar-scanner' as any)}
+              activeOpacity={0.88}
+            >
+              <LinearGradient
+                colors={['#1a0a00', '#3B1A08']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.arScannerGradient}
+              >
+                {/* Gold decorative line */}
+                <View style={styles.arGoldLine} />
+                <View style={styles.arScannerContent}>
+                  <View style={styles.arScannerLeft}>
+                    <View style={styles.arIconCircle}>
+                      <Ionicons name="scan" size={28} color="#DAA520" />
+                    </View>
+                    <View style={styles.arTextBlock}>
+                      <Text style={styles.arScannerTitle}>📷 Escanear ISBN</Text>
+                      <Text style={styles.arScannerSubtitle}>
+                        Apunta al código de barras del libro para encontrar su información al instante
+                      </Text>
+                      <View style={styles.arBadge}>
+                        <Text style={styles.arBadgeText}>Gratis · Sin APIs externas</Text>
+                      </View>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={22} color="rgba(218,165,32,0.7)" />
+                </View>
+                {/* Gold decorative line bottom */}
+                <View style={styles.arGoldLine} />
+              </LinearGradient>
+            </TouchableOpacity>
+
             {/* Stats Cards */}
             {user && (
               <View style={styles.statsContainer}>
@@ -872,6 +908,81 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: 'bold',
+  },
+
+  // AR Scanner Card
+  arScannerCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#DAA520',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(218, 165, 32, 0.3)',
+  },
+  arScannerGradient: {
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  arGoldLine: {
+    height: 1,
+    backgroundColor: 'rgba(218, 165, 32, 0.25)',
+  },
+  arScannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  arScannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    flex: 1,
+  },
+  arIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(218, 165, 32, 0.15)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(218, 165, 32, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  arTextBlock: {
+    flex: 1,
+    gap: 5,
+  },
+  arScannerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  arScannerSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.75)',
+    lineHeight: 18,
+  },
+  arBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(218, 165, 32, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(218, 165, 32, 0.5)',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 20,
+    marginTop: 2,
+  },
+  arBadgeText: {
+    fontSize: 11,
+    color: '#DAA520',
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   // Scroll to Top Button
   scrollToTopButton: {

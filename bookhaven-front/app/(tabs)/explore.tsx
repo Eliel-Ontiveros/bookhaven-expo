@@ -225,22 +225,32 @@ export default function ExploreScreen() {
           </View>
 
           {/* Modern Search Bar */}
-          <View style={styles.modernSearchContainer}>
-            <Ionicons name="search" size={20} color="#666666" style={styles.searchIcon} />
-            <TextInput
-              style={[styles.modernSearchInput, { color: '#000000' }]}
-              placeholder="Buscar libros..."
-              placeholderTextColor="#999999"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={handleSearch}
-              returnKeyType="search"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearIconButton}>
-                <Ionicons name="close-circle" size={20} color="#666666" />
-              </TouchableOpacity>
-            )}
+          <View style={styles.searchRow}>
+            <View style={styles.modernSearchContainer}>
+              <Ionicons name="search" size={20} color="#666666" style={styles.searchIcon} />
+              <TextInput
+                style={[styles.modernSearchInput, { color: '#000000' }]}
+                placeholder="Buscar libros..."
+                placeholderTextColor="#999999"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSubmitEditing={handleSearch}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearIconButton}>
+                  <Ionicons name="close-circle" size={20} color="#666666" />
+                </TouchableOpacity>
+              )}
+            </View>
+            {/* Botón AR Scanner */}
+            <TouchableOpacity
+              style={styles.arButton}
+              /*onPress={() => router.push('/ar-scanner')}*/
+              activeOpacity={0.8}
+            >
+              <Ionicons name="scan" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
         </View>
       </LinearGradient>
@@ -349,6 +359,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modernSearchContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
@@ -360,6 +371,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  arButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.5)',
   },
   searchIcon: {
     marginRight: 12,

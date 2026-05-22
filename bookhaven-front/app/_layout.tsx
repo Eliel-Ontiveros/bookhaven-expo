@@ -21,6 +21,7 @@ export default function RootLayout() {
             <Stack.Screen name="post-detail" options={{ headerShown: false }} />
             <Stack.Screen name="user-profile" options={{ headerShown: false }} />
             <Stack.Screen name="chat" options={{ headerShown: false }} />
+            <Stack.Screen name="ar-scanner" options={{ headerShown: false, animation: 'fade' }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
           <StatusBar style="auto" />

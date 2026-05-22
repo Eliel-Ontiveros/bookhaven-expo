@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
         let searchQuery = query.trim();
 
-        if (searchQuery.includes('intitle:') || searchQuery.includes('inauthor:') || searchQuery.includes('subject:')) {
+        if (searchQuery.includes('intitle:') || searchQuery.includes('inauthor:') || searchQuery.includes('subject:') || searchQuery.startsWith('isbn:')) {
             console.log('📘 Using enhanced query from frontend:', searchQuery);
         } else {
             const words = searchQuery.toLowerCase().split(/\s+/).filter(word => word.length > 0);

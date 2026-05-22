@@ -5,14 +5,15 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "bookhavenfront",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
-        ]
+        ],
+        "NSCameraUsageDescription": "BookHaven necesita acceso a la cámara para escanear portadas de libros con AR."
       }
     },
     "android": {
@@ -20,13 +21,22 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
       "useNextNotificationsApi": true,
-      "package": "com.emasol.bookhavenfront"
+      "package": "com.emasol.bookhavenfront",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "output": "static"
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "BookHaven necesita acceso a la cámara para escanear portadas de libros con AR."
+        }
+      ],
       [
         "expo-notifications",
         {
