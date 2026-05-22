@@ -25,7 +25,10 @@
                 "buildType": "apk"
             },
             "env": {
-                "EXPO_NO_CAPABILITY_SYNC": "1"
+                "EXPO_NO_CAPABILITY_SYNC": "1",
+                "EXPO_PUBLIC_API_BASE_URL": "https://bookhaven-expo.vercel.app",
+                "EXPO_PUBLIC_API_TIMEOUT": "30000",
+                "EXPO_PUBLIC_API_DEBUG": "false"
             }
         }
     },

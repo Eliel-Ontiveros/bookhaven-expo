@@ -91,7 +91,7 @@ async function fetchGoogleBooksRecommendations(
                             authors: Array.isArray(volumeInfo.authors)
                                 ? volumeInfo.authors.join(', ')
                                 : volumeInfo.authors || 'Autor desconocido',
-                            image: volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail,
+                            image: (volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail || '').replace(/^http:\/\//i, 'https://') || null,
                             description: volumeInfo.description || 'Sin descripción disponible',
                             categories: volumeInfo.categories || [genre],
                             averageRating: volumeInfo.averageRating || 4.0,

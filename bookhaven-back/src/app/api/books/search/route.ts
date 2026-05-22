@@ -4,6 +4,11 @@ import { APIResponse, BookResponse, BookSearchParams, PaginationResponse } from 
 const GOOGLE_BOOKS_API_URL = 'https://www.googleapis.com/books/v1/volumes';
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY;
 
+function toHttps(url: string | undefined | null): string | null {
+    if (!url) return null;
+    return url.replace(/^http:\/\//i, 'https://');
+}
+
 function transformGoogleBookToBookResponse(item: any): BookResponse {
     const volumeInfo = item.volumeInfo || {};
 
@@ -16,15 +21,18 @@ function transformGoogleBookToBookResponse(item: any): BookResponse {
         });
     }
 
+    const rawImage =
+        volumeInfo.imageLinks?.thumbnail ||
+        volumeInfo.imageLinks?.smallThumbnail ||
+        volumeInfo.imageLinks?.small ||
+        volumeInfo.imageLinks?.medium ||
+        null;
+
     return {
         id: item.id || `temp_${Date.now()}_${Math.random()}`,
         title: volumeInfo.title || 'Título no disponible',
         authors: volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Autor desconocido',
-        image: volumeInfo.imageLinks?.thumbnail ||
-            volumeInfo.imageLinks?.smallThumbnail ||
-            volumeInfo.imageLinks?.small ||
-            volumeInfo.imageLinks?.medium ||
-            null,
+        image: toHttps(rawImage),
         description: volumeInfo.description || 'Descripción no disponible',
         categories: volumeInfo.categories || [],
         averageRating: volumeInfo.averageRating || null

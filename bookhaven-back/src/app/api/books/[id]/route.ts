@@ -4,12 +4,17 @@ import { APIResponse, BookResponse } from '@/lib/types/api';
 const GOOGLE_BOOKS_API_URL = 'https://www.googleapis.com/books/v1/volumes';
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY;
 
+function toHttps(url: string | undefined | null): string | null {
+    if (!url) return null;
+    return url.replace(/^http:\/\//i, 'https://');
+}
+
 function transformGoogleBookToBookResponse(volumeInfo: any, id: string): BookResponse {
     return {
         id,
         title: volumeInfo.title || 'Título no disponible',
         authors: volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Autor desconocido',
-        image: volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail,
+        image: toHttps(volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail),
         description: volumeInfo.description,
         categories: volumeInfo.categories || [],
         averageRating: volumeInfo.averageRating
