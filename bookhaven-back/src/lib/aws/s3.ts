@@ -1,21 +1,21 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-// Configuración de S3
-const s3Config = {
-    region: process.env.AWS_REGION || 'us-east-1',
+// Configuración de Cloudflare R2 (compatible con API de S3)
+const accountId = process.env.R2_ACCOUNT_ID || '';
+
+const s3Client = new S3Client({
+    region: 'auto',
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
     credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+        accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
     },
-};
+});
 
-const s3Client = new S3Client(s3Config);
-
-// Configuración del bucket
 export const S3_CONFIG = {
-    BUCKET_NAME: process.env.AWS_S3_BUCKET_NAME || 'bookhaven-voice-notes',
-    REGION: process.env.AWS_REGION || 'us-east-1',
+    BUCKET_NAME: process.env.R2_BUCKET_NAME || 'bookhaven-multimedia-content',
+    REGION: 'auto',
     URL_EXPIRATION: 3600 * 24, // 24 horas
 } as const;
 
@@ -42,7 +42,6 @@ export async function uploadVoiceNote(
             Key: key,
             Body: fileBuffer,
             ContentType: contentType,
-            ACL: 'private', // Archivo privado por seguridad
             Metadata: {
                 uploadedAt: new Date().toISOString(),
                 type: 'voice-note',
@@ -51,7 +50,7 @@ export async function uploadVoiceNote(
 
         await s3Client.send(command);
 
-        console.log('✅ File uploaded successfully to S3:', key);
+        console.log('✅ File uploaded successfully to R2:', key);
 
         // Retornar la clave del archivo (no URL pública)
         return key;
@@ -120,7 +119,6 @@ export async function uploadImage(
             Key: key,
             Body: fileBuffer,
             ContentType: contentType,
-            ACL: 'private',
             Metadata: {
                 uploadedAt: new Date().toISOString(),
                 type: 'image',
@@ -129,7 +127,7 @@ export async function uploadImage(
 
         await s3Client.send(command);
 
-        console.log('✅ Image uploaded successfully to S3:', key);
+        console.log('✅ Image uploaded successfully to R2:', key);
 
         return key;
     } catch (error) {
@@ -177,20 +175,20 @@ export async function deleteImage(key: string): Promise<void> {
 }
 
 /**
- * Verifica que las credenciales de AWS estén configuradas
+ * Verifica que las credenciales de Cloudflare R2 estén configuradas
  */
 export function validateAWSConfig(): boolean {
     const requiredEnvVars = [
-        'AWS_ACCESS_KEY_ID',
-        'AWS_SECRET_ACCESS_KEY',
-        'AWS_S3_BUCKET_NAME',
-        'AWS_REGION'
+        'R2_ACCOUNT_ID',
+        'R2_ACCESS_KEY_ID',
+        'R2_SECRET_ACCESS_KEY',
+        'R2_BUCKET_NAME',
     ];
 
     const missing = requiredEnvVars.filter(envVar => !process.env[envVar]);
 
     if (missing.length > 0) {
-        console.error('Missing required AWS environment variables:', missing);
+        console.error('Missing required Cloudflare R2 environment variables:', missing);
         return false;
     }
 
